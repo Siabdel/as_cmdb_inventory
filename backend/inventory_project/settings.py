@@ -243,3 +243,24 @@ if not DEBUG:
     # Additional security headers
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
     SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+
+# DRF Spectacular Configuration (OpenAPI 3 documentation)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'CMDB Inventory API',
+    'DESCRIPTION': 'API REST pour la gestion d\'inventaire matériel',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/',
+    'TAGS': [
+        {'name': 'Assets', 'description': 'Gestion des équipements'},
+        {'name': 'Categories', 'description': 'Gestion des catégories'},
+        {'name': 'Locations', 'description': 'Gestion des emplacements'},
+        {'name': 'Brands', 'description': 'Gestion des marques'},
+        {'name': 'Tags', 'description': 'Gestion des étiquettes'},
+        {'name': 'Movements', 'description': 'Gestion des mouvements'},
+        {'name': 'Maintenance', 'description': 'Gestion de la maintenance'},
+        {'name': 'Dashboard', 'description': 'Statistiques et tableaux de bord'},
+        {'name': 'Auth', 'description': 'Authentification'},
+    ],
+}
