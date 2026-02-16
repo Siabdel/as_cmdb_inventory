@@ -1,0 +1,1 @@
+# Application Django pour la gestion d'inventaire CMDB
