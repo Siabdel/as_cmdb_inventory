@@ -1,0 +1,66 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+    <h1>Gestion des Tickets de Maintenance - Statistiques</h1>
+{% endblock %}
+
+{% block result_list %}
+    <div class="stats-container">
+        <div class="stats-row">
+            <div class="stat-box">
+                <h3>Total Tickets</h3>
+                <p>{{ cl.result_list.count }}</p>
+            </div>
+            <div class="stat-box">
+                <h3>En cours</h3>
+                <p>{{ cl.queryset.filter(status='EN_COURS').count() }}</p>
+            </div>
+            <div class="stat-box">
+                <h3>Ouverts ce mois</h3>
+                <p>{{ cl.queryset.filter(created_at__month=current_month).count() }}</p>
+            </div>
+            <div class="stat-box">
+                <h3>Durée moyenne</h3>
+                <p>
+                    {% with avg_duration=cl.queryset.filter(closed_at__isnull=False).aggregate(avg=Avg('closed_at' - 'created_at')) %}
+                        {{ avg_duration.avg|default:"-" }}
+                    {% endwith %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .stats-container {
+            margin-bottom: 20px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .stat-box {
+            flex: 1;
+            padding: 15px;
+            margin: 0 5px;
+            background: #f8f8f8;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        .stat-box h3 {
+            margin-top: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .stat-box p {
+            margin-bottom: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+{% endblock %}

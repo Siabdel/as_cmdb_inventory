@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+
+{% block branding %}
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">
+            Administration CMDB Inventory
+        </a>
+    </h1>
+{% endblock %}
+
+{% block nav-global %}
+    {{ block.super }}
+    {% if has_dashboard %}
+        <div class="dashboard-link">
+            <a href="{% url 'admin:dashboard' %}">📊 Tableau de bord</a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .dashboard-link {
+            padding: 10px 15px;
+            margin: 0 10px;
+            background: #79aec8;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .dashboard-link a {
+            color: white !important;
+            font-weight: bold;
+        }
+        .dashboard-link a:hover {
+            text-decoration: none;
+        }
