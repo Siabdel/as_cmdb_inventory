@@ -278,3 +278,46 @@ class DashboardSummarySerializer(serializers.Serializer):
     recent_movements = AssetMovementSerializer(many=True)
     assets_needing_maintenance = AssetListSerializer(many=True)
     warranty_expiring_soon = AssetListSerializer(many=True)
+    
+    
+    class AssetSerializer(serializers.ModelSerializer):
+        class Meta(AssetDetailSerializer.Meta):
+            pass
+
+class AssetSerializer(serializers.ModelSerializer):
+    """Serializer complet pour les assets, utilisé pour les détails et les listes"""
+    
+    category_detail = CategorySerializer(source='category', read_only=True)
+    brand_detail = BrandSerializer(source='brand', read_only=True)
+    location_detail = LocationSerializer(source='current_location', read_only=True)
+    assigned_to_detail = UserSerializer(source='assigned_to', read_only=True)
+    tags_detail = TagSerializer(source='tags', many=True, read_only=True)
+    warranty_status = serializers.CharField(read_only=True)
+    is_warranty_expired = serializers.BooleanField(read_only=True)
+    movements_count = serializers.SerializerMethodField()
+    qr_code_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Asset
+        fields = [
+            'id', 'internal_code', 'name', 'category', 'category_detail',
+            'brand', 'brand_detail', 'model', 'serial_number', 'description',
+            'purchase_date', 'purchase_price', 'warranty_end', 'warranty_status',
+            'is_warranty_expired', 'status', 'current_location', 'location_detail',
+            'assigned_to', 'assigned_to_detail', 'tags', 'tags_detail',
+            'qr_code_image', 'qr_code_url', 'notes', 'movements_count',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_movements_count(self, obj):
+        """Retourne le nombre de mouvements de cet asset"""
+        return obj.movements.count()
+    
+    def get_qr_code_url(self, obj):
+        """Retourne l'URL complète du QR code"""
+        if obj.qr_code_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.qr_code_image.url)
+            return obj.qr_code_image.url
+        return None

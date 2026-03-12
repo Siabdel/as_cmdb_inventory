@@ -1,388 +1,219 @@
-"""
-Configuration de l'interface d'administration Django pour CMDB Inventory
-"""
-
 from django.contrib import admin
-from django.utils.html import format_html
-from django.urls import reverse
+from django.urls import path
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.db.models import Count, Q, Sum, Avg
 from django.utils.safestring import mark_safe
-
-from .models import Location, Category, Brand, Tag, Asset, AssetMovement
-from .maintenance_models import MaintenanceType, MaintenanceTicket, MaintenanceAction
-
-
-@admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    """Administration des emplacements"""
-    
-    list_display = ['name', 'type', 'parent', 'assets_count', 'created_at']
-    list_filter = ['type', 'created_at']
-    search_fields = ['name', 'description']
-    ordering = ['name']
-    list_per_page = 25
-    
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('name', 'type', 'parent')
-        }),
-        ('Description', {
-            'fields': ('description',),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def assets_count(self, obj):
-        """Affiche le nombre d'assets dans cet emplacement"""
-        count = obj.assets.count()
-        if count > 0:
-            url = reverse('admin:inventory_asset_changelist') + f'?current_location__id__exact={obj.id}'
-            return format_html('<a href="{}">{} équipements</a>', url, count)
-        return '0 équipement'
-    assets_count.short_description = 'Équipements'
+from .models import Asset, Location, Category, Brand
+from .maintenance_models import MaintenanceTicket, MaintenanceType, MaintenanceAction
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    """Administration des catégories"""
+class CustomAdminSite(admin.AdminSite):
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('dashboard/', self.admin_view(self.dashboard), name='dashboard'),
+        ]
+        return custom_urls + urls
     
-    list_display = ['name', 'parent', 'assets_count', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['name', 'description']
-    ordering = ['name']
-    prepopulated_fields = {'slug': ('name',)}
-    list_per_page = 25
+    def index(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['has_dashboard'] = True
+        return super().index(request, extra_context=extra_context)
     
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('name', 'slug', 'parent', 'icon')
-        }),
-        ('Description', {
-            'fields': ('description',),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def assets_count(self, obj):
-        """Affiche le nombre d'assets dans cette catégorie"""
-        count = obj.assets.count()
-        if count > 0:
-            url = reverse('admin:inventory_asset_changelist') + f'?category__id__exact={obj.id}'
-            return format_html('<a href="{}">{} équipements</a>', url, count)
-        return '0 équipement'
-    assets_count.short_description = 'Équipements'
+    def app_index(self, request, app_label, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['has_dashboard'] = True
+        return super().app_index(request, app_label, extra_context=extra_context)
 
-
-@admin.register(Brand)
-class BrandAdmin(admin.ModelAdmin):
-    """Administration des marques"""
-    
-    list_display = ['name', 'website', 'logo_preview', 'assets_count', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['name', 'website']
-    ordering = ['name']
-    list_per_page = 25
-    
-    def logo_preview(self, obj):
-        """Affiche un aperçu du logo"""
-        if obj.logo:
-            return format_html(
-                '<img src="{}" style="max-height: 30px; max-width: 50px;" />',
-                obj.logo.url
-            )
-        return 'Pas de logo'
-    logo_preview.short_description = 'Logo'
-    
-    def assets_count(self, obj):
-        """Affiche le nombre d'assets de cette marque"""
-        count = obj.assets.count()
-        if count > 0:
-            url = reverse('admin:inventory_asset_changelist') + f'?brand__id__exact={obj.id}'
-            return format_html('<a href="{}">{} équipements</a>', url, count)
-        return '0 équipement'
-    assets_count.short_description = 'Équipements'
-
-
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
-    """Administration des étiquettes"""
-    
-    list_display = ['name', 'color_preview', 'assets_count', 'created_at']
-    list_filter = ['created_at']
-    search_fields = ['name', 'description']
-    ordering = ['name']
-    list_per_page = 25
-    
-    def color_preview(self, obj):
-        """Affiche un aperçu de la couleur"""
-        return format_html(
-            '<div style="width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; display: inline-block;"></div> {}',
-            obj.color, obj.color
+    def dashboard(self, request):
+        from django.db.models import Count, Sum, Avg
+        from django.utils import timezone
+        
+        # Statistiques des assets
+        assets = Asset.objects.aggregate(
+            total=Count('id'),
+            in_use=Count('id', filter=Q(status='use')),
+            in_maintenance=Count('id', filter=Q(status='maintenance')),
+            total_value=Sum('purchase_value'),
+            avg_value=Avg('purchase_value')
         )
-    color_preview.short_description = 'Couleur'
-    
-    def assets_count(self, obj):
-        """Affiche le nombre d'assets avec cette étiquette"""
-        count = obj.assets.count()
-        if count > 0:
-            url = reverse('admin:inventory_asset_changelist') + f'?tags__id__exact={obj.id}'
-            return format_html('<a href="{}">{} équipements</a>', url, count)
-        return '0 équipement'
-    assets_count.short_description = 'Équipements'
+        
+        # Statistiques des tickets
+        maintenance = MaintenanceTicket.objects.aggregate(
+            total=Count('id'),
+            in_progress=Count('id', filter=Q(status='EN_COURS')),
+            this_month=Count('id', filter=Q(created_at__month=timezone.now().month))
+        )
+        
+        # Rendu du template
+        return render(request, 'admin/dashboard.html', {
+            'asset_count': assets['total'],
+            'assets_in_use': assets['in_use'],
+            'assets_in_maintenance': assets['in_maintenance'],
+            'total_value': assets['total_value'] or 0,
+            'avg_value': assets['avg_value'] or 0,
+            'maintenance_count': maintenance['total'],
+            'maintenance_in_progress': maintenance['in_progress'],
+            'maintenance_this_month': maintenance['this_month']
+        })
 
 
-class AssetMovementInline(admin.TabularInline):
-    """Inline pour afficher les mouvements dans l'admin des assets"""
-    
-    model = AssetMovement
-    extra = 0
-    readonly_fields = ['created_at']
-    fields = ['from_location', 'to_location', 'move_type', 'moved_by', 'note', 'created_at']
-    
-    def has_add_permission(self, request, obj=None):
-        return False
+class StatusFilter(admin.SimpleListFilter):
+    title = 'Statut'
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return Asset.STATUS_CHOICES
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(status=self.value())
+        return queryset
 
 
-@admin.register(Asset)
+class ConditionFilter(admin.SimpleListFilter):
+    title = 'Condition'
+    parameter_name = 'condition'
+
+    def lookups(self, request, model_admin):
+        return Asset.CONDITION_CHOICES
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(condition=self.value())
+        return queryset
+
+
 class AssetAdmin(admin.ModelAdmin):
-    """Administration des équipements"""
-    
-    list_display = [
-        'internal_code', 'name', 'category', 'brand', 'status',
-        'current_location', 'assigned_to', 'warranty_status_display',
-        'qr_code_preview', 'created_at'
-    ]
-    list_filter = [
-        'status', 'category', 'brand', 'current_location',
-        'created_at', 'purchase_date', 'warranty_end'
-    ]
-    search_fields = [
-        'internal_code', 'name', 'model', 'serial_number',
-        'description', 'category__name', 'brand__name'
-    ]
-    ordering = ['-created_at']
-    list_per_page = 25
-    readonly_fields = ['id', 'qr_code_preview', 'warranty_status', 'created_at', 'updated_at']
-    filter_horizontal = ['tags']
-    inlines = [AssetMovementInline]
-    
-    fieldsets = (
-        ('Identification', {
-            'fields': ('id', 'internal_code', 'name', 'category', 'brand')
-        }),
-        ('Détails techniques', {
-            'fields': ('model', 'serial_number', 'description'),
-            'classes': ('collapse',)
-        }),
-        ('Informations financières', {
-            'fields': ('purchase_date', 'purchase_price', 'warranty_end', 'warranty_status'),
-            'classes': ('collapse',)
-        }),
-        ('Statut et localisation', {
-            'fields': ('status', 'current_location', 'assigned_to')
-        }),
-        ('Métadonnées', {
-            'fields': ('tags', 'notes'),
-            'classes': ('collapse',)
-        }),
-        ('QR Code', {
-            'fields': ('qr_code_image', 'qr_code_preview'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def qr_code_preview(self, obj):
-        """Affiche un aperçu du QR code"""
-        if obj.qr_code_image:
-            return format_html(
-                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
-                obj.qr_code_image.url
-            )
-        return 'QR code non généré'
-    qr_code_preview.short_description = 'Aperçu QR Code'
-    
-    def warranty_status_display(self, obj):
-        """Affiche le statut de la garantie avec couleur"""
-        status = obj.warranty_status
-        if status == 'Expirée':
-            color = 'red'
-        elif status == 'Expire bientôt':
-            color = 'orange'
-        elif status == 'Valide':
-            color = 'green'
-        else:
-            color = 'gray'
+    list_display = ('internal_code', 'name', 'brand', 'category', 'status', 'condition_state', 'current_location', 'age', 'get_stats')
+    list_filter = (StatusFilter, ConditionFilter, 'category', 'brand', 'current_location')
+    search_fields = ('internal_code', 'name', 'serial_number', 'description', 'tags__name')
+    raw_id_fields = ('assigned_to',)
+    date_hierarchy = 'purchase_date'
+    list_per_page = 50
+    actions = ['mark_as_in_use', 'mark_as_in_stock']
+    change_form_template = 'admin/inventory/asset/change_form.html'
+
+    def get_stats(self, obj):
+        stats = {
+            'maintenance_count': MaintenanceTicket.objects.filter(asset=obj).count(),
+            'last_maintenance': MaintenanceTicket.objects.filter(asset=obj).order_by('-created_at').first(),
+        }
+        return mark_safe(f"<div class='stats'>Maintenances: {stats['maintenance_count']}</div>")
+    get_stats.short_description = 'Statistiques'
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        asset = self.get_object(request, object_id)
         
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, status
-        )
-    warranty_status_display.short_description = 'Garantie'
-    
-    actions = ['generate_qr_codes', 'mark_as_broken', 'mark_as_stock']
-    
-    def generate_qr_codes(self, request, queryset):
-        """Action pour générer les QR codes des assets sélectionnés"""
-        count = 0
-        for asset in queryset:
-            if not asset.qr_code_image:
-                asset.generate_qr_code()
-                count += 1
+        # Calcul des statistiques
+        maintenance_tickets = MaintenanceTicket.objects.filter(asset=asset)
+        extra_context['maintenance_count'] = maintenance_tickets.count()
+        extra_context['last_maintenance'] = maintenance_tickets.order_by('-created_at').first()
         
-        self.message_user(
-            request,
-            f'{count} QR codes générés avec succès.'
+        # Calcul de la durée moyenne
+        closed_tickets = maintenance_tickets.filter(closed_at__isnull=False)
+        if closed_tickets.exists():
+            avg_days = sum(
+                (ticket.closed_at - ticket.created_at).days
+                for ticket in closed_tickets
+            ) / closed_tickets.count()
+            extra_context['avg_duration'] = round(avg_days, 1)
+        
+        return super().change_view(
+            request, object_id, form_url, extra_context=extra_context
         )
-    generate_qr_codes.short_description = 'Générer les QR codes'
-    
-    def mark_as_broken(self, request, queryset):
-        """Action pour marquer les assets comme en panne"""
-        count = queryset.update(status='broken')
-        self.message_user(
-            request,
-            f'{count} équipements marqués comme en panne.'
-        )
-    mark_as_broken.short_description = 'Marquer comme en panne'
-    
-    def mark_as_stock(self, request, queryset):
-        """Action pour marquer les assets comme en stock"""
-        count = queryset.update(status='stock')
-        self.message_user(
-            request,
-            f'{count} équipements marqués comme en stock.'
-        )
-    mark_as_stock.short_description = 'Marquer comme en stock'
+
+    def age(self, obj):
+        if obj.purchase_date:
+            from datetime import date
+            return (date.today() - obj.purchase_date).days // 365
+        return None
+    age.short_description = 'Âge (ans)'
+
+    @admin.action(description='Marquer comme en utilisation')
+    def mark_as_in_use(self, request, queryset):
+        updated = queryset.update(status='use')
+        self.message_user(request, f'{updated} assets marqués comme en utilisation.')
+
+    @admin.action(description='Marquer comme en stock')
+    def mark_as_in_stock(self, request, queryset):
+        updated = queryset.update(status='stock')
+        self.message_user(request, f'{updated} assets marqués comme en stock.')
 
 
-@admin.register(AssetMovement)
-class AssetMovementAdmin(admin.ModelAdmin):
-    """Administration des mouvements d'équipements"""
-    
-    list_display = [
-        'asset', 'move_type', 'from_location', 'to_location',
-        'moved_by', 'created_at'
-    ]
-    list_filter = ['move_type', 'created_at', 'from_location', 'to_location']
-    search_fields = [
-        'asset__internal_code', 'asset__name', 'note',
-        'moved_by__username', 'moved_by__first_name', 'moved_by__last_name'
-    ]
-    ordering = ['-created_at']
-    list_per_page = 25
-    readonly_fields = ['created_at']
-    
-    fieldsets = (
-        ('Mouvement', {
-            'fields': ('asset', 'move_type', 'from_location', 'to_location')
-        }),
-        ('Détails', {
-            'fields': ('moved_by', 'note', 'created_at')
-        }),
-    )
-    
-    def has_add_permission(self, request):
-        """Empêche l'ajout direct de mouvements via l'admin"""
-        return False
-
-
-@admin.register(MaintenanceType)
-class MaintenanceTypeAdmin(admin.ModelAdmin):
-    """Administration des types de maintenance"""
-    
-    list_display = ['name', 'is_preventive', 'estimated_duration_hours', 'created_at']
-    list_filter = ['is_preventive', 'created_at']
-    search_fields = ['name', 'description']
-    ordering = ['name']
-    
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('name', 'is_preventive', 'estimated_duration_hours')
-        }),
-        ('Description', {
-            'fields': ('description',),
-            'classes': ('collapse',)
-        }),
-    )
-
-
-class MaintenanceActionInline(admin.TabularInline):
-    """Actions de maintenance en ligne dans le ticket"""
-    model = MaintenanceAction
-    extra = 0
-    fields = ['action_type', 'description', 'cost_euros', 'duration_hours', 'performed_by', 'performed_at']
-    readonly_fields = ['performed_at']
-
-
-@admin.register(MaintenanceTicket)
 class MaintenanceTicketAdmin(admin.ModelAdmin):
-    """Administration des tickets de maintenance"""
-    
-    list_display = ['id', 'asset', 'title', 'priority', 'status', 'created_by', 'assigned_to', 'created_at']
-    list_filter = ['status', 'priority', 'created_at', 'maintenance_type']
-    search_fields = ['title', 'description', 'asset__name', 'asset__internal_code']
-    ordering = ['-created_at']
-    list_select_related = ['asset', 'maintenance_type', 'created_by', 'assigned_to']
-    inlines = [MaintenanceActionInline]
-    
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('asset', 'maintenance_type', 'title', 'description')
-        }),
-        ('Statut et priorité', {
-            'fields': ('priority', 'status')
-        }),
-        ('Attribution', {
-            'fields': ('assigned_to',),
-            'classes': ('collapse',)
-        }),
-        ('Dates', {
-            'fields': ('due_date',),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
+    list_display = ('id', 'asset', 'status', 'priority', 'created_at', 'closed_at', 'duration', 'assigned_to')
+    list_filter = ('status', 'priority', 'maintenance_type', 'assigned_to')
+    search_fields = ('asset__internal_code', 'asset__name', 'description', 'technician__username')
+    date_hierarchy = 'created_at'
+    list_select_related = ('asset', 'technician')
+    actions = ['close_tickets']
+    change_form_template = 'admin/inventory/maintenanceticket/change_form.html'
+
+    def duration(self, obj):
+        if obj.closed_at:
+            days = (obj.closed_at - obj.created_at).days
+            return f"{days} jours"
+        return None
+    duration.short_description = 'Durée'
+
+    @admin.action(description='Fermer les tickets sélectionnés')
+    def close_tickets(self, request, queryset):
+        from django.utils import timezone
+        updated = queryset.filter(status='EN_COURS').update(
+            status='TERMINE',
+            closed_at=timezone.now()
+        )
+        self.message_user(request, f'{updated} tickets fermés.')
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        ticket = self.get_object(request, object_id)
+        
+        # Calcul des statistiques
+        if ticket.asset:
+            maintenance_tickets = MaintenanceTicket.objects.filter(asset=ticket.asset)
+            extra_context['maintenance_count'] = maintenance_tickets.count()
+            
+            # Calcul de la durée moyenne
+            closed_tickets = maintenance_tickets.filter(closed_at__isnull=False)
+            if closed_tickets.exists():
+                avg_days = sum(
+                    (ticket.closed_at - ticket.created_at).days
+                    for ticket in closed_tickets
+                ) / closed_tickets.count()
+                extra_context['avg_duration'] = round(avg_days, 1)
+            
+            # Calcul du coût total
+            total_cost = maintenance_tickets.aggregate(total=Sum('cost'))['total']
+            extra_context['total_cost'] = total_cost if total_cost else 0
+        
+        return super().change_view(
+            request, object_id, form_url, extra_context=extra_context
+        )
 
 
-@admin.register(MaintenanceAction)
+admin_site = CustomAdminSite(name='customadmin')
+admin.site = admin_site  # Remplace l'instance admin par défaut
+admin.site.register(Asset, AssetAdmin)
+class MaintenanceTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_preventive', 'estimated_duration_hours')
+    list_filter = ('is_preventive',)
+    search_fields = ('name', 'description')
+    ordering = ('name',)
+
+
 class MaintenanceActionAdmin(admin.ModelAdmin):
-    """Administration des actions de maintenance"""
-    
-    list_display = ['ticket', 'action_type', 'cost_euros', 'duration_hours', 'performed_by', 'performed_at']
-    list_filter = ['action_type', 'performed_at']
-    search_fields = ['description', 'ticket__title', 'parts_used']
-    ordering = ['-performed_at']
-    list_select_related = ['ticket', 'ticket__asset', 'performed_by']
-    
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('ticket', 'action_type', 'description')
-        }),
-        ('Coûts et durée', {
-            'fields': ('cost_euros', 'duration_hours')
-        }),
-        ('Statuts', {
-            'fields': ('before_status', 'after_status')
-        }),
-        ('Pièces et exécution', {
-            'fields': ('parts_used', 'performed_by'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def save_model(self, request, obj, form, change):
-        if not change:
-            obj.performed_by = request.user
-        super().save_model(request, obj, form, change)
+    list_display = ('id', 'ticket', 'action_type', 'performed_at', 'performed_by', 'cost_euros', 'duration_hours')
+    list_filter = ('action_type', 'performed_by')
+    search_fields = ('ticket__title', 'description', 'parts_used')
+    date_hierarchy = 'performed_at'
+    list_select_related = ('ticket', 'performed_by')
+    raw_id_fields = ('ticket', 'performed_by')
 
 
-# Configuration globale de l'admin
-admin.site.site_header = "CMDB Inventory - Administration"
-admin.site.site_title = "CMDB Admin"
-admin.site.index_title = "Gestion de l'inventaire matériel"
+admin.site.register(MaintenanceTicket, MaintenanceTicketAdmin)
+admin.site.register(MaintenanceType, MaintenanceTypeAdmin)
+admin.site.register(MaintenanceAction, MaintenanceActionAdmin)

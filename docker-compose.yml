@@ -1,4 +1,4 @@
-version: '3.8'
+## version: '3.9'
 
 services:
   # Base de données PostgreSQL
@@ -7,12 +7,17 @@ services:
     environment:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventory_user
-      POSTGRES_PASSWORD: inventory_pass
+      POSTGRES_PASSWORD: inventory_password 
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5433:5432"  # Externe 5433 → interne 5432
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory_user -d inventory_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -33,16 +38,21 @@ services:
     ports:
       - "8300:8300"
     environment:
+      - DB_HOST=db
+      - DOCKER_ENV=1  # Signal Docker
       - DEBUG=1
       - DATABASE_URL=postgresql://inventory_user:inventory_pass@db:5432/inventory_db
+      - DB_PORT=5432
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=django-insecure-dev-key-change-in-production
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,backend
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
       - QR_CODE_BASE_URL=http://localhost:8300/assets
     depends_on:
-      - db
-      - redis
+      db:
+        condition: "service_healthy"
+
+
     volumes:
       - ./backend:/app
       - media_files:/app/media
@@ -68,7 +78,8 @@ services:
       - redis
     volumes:
       - ./backend:/app
-      - media_files:/app/media
+      - media_files:/app/media  # Nom générique
+      - ./qr_codes:/app/media/qr_codes  # Bind mount local
     restart: unless-stopped
     networks:
       - app-network
@@ -85,6 +96,7 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - SECRET_KEY=django-insecure-dev-key-change-in-production
+      - DEBUG=1
     depends_on:
       - db
       - redis

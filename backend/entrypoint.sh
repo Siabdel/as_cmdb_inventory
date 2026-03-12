@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Créer le répertoire de logs
+echo "Creating logs directory..."
+mkdir -p /app/logs
+
 # Attendre que PostgreSQL soit prêt
 echo "Waiting for PostgreSQL..."
 while ! pg_isready -h db -p 5432 -U inventory_user; do

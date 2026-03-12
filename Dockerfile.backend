@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 # Installation des dépendances Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
+## RUN pip install --no-cache-dir gunicorn 
 # Copie du code source
 COPY . .
 
