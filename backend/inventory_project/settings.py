@@ -32,7 +32,6 @@ if raw_hosts:
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-print(f"✅ ALLOWED_HOSTS configuré: {ALLOWED_HOSTS}")  # Debug temporaire
 
 # Application definition
 DJANGO_APPS = [
@@ -55,7 +54,13 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     'inventory',
+    'stock',
+    'maintenance',
+    'scanner.apps.ScannerConfig',  # ← important pour le ready()
 ]
+
+# URL de base encodée dans le QR (à adapter en prod)
+QR_CODE_BASE_URL = os.environ.get('INVENTORY_QR_CODE_BASE_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -93,16 +98,19 @@ ASGI_APPLICATION = 'inventory_project.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# settings.py du projet inventory
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DB_NAME', default='inventory_db'),
-        'USER': env('DB_USER', default='inventory_user'),
-        'PASSWORD': env('DB_PASSWORD', default='inventory_password'),
-        'HOST': env('DB_HOST', default='localhost'),
-        'PORT': env('DB_PORT', default='5433'),
+        'NAME':     os.environ.get('INVENTORY_DB_NAME', 'inventory_db'),      # ← préfixe INVENTORY_
+        'USER':     os.environ.get('INVENTORY_DB_USER', 'inventory_user'),
+        'PASSWORD': os.environ.get('INVENTORY_DB_PASSWORD', ''),
+        'HOST':     os.environ.get('INVENTORY_DB_HOST', 'localhost'),
+        'PORT':     os.environ.get('INVENTORY_DB_PORT', '5432'),
     }
 }
+
 
 # Log the database connection settings
 logger = logging.getLogger(__name__)
@@ -114,10 +122,10 @@ logger.info(f"Database settings: {DATABASES['default']}")
 def log_database_connection():
     """DB test - Docker safe"""
     connection = None
-    db_host = os.environ.get('DB_HOST', 'localhost')
-    db_port = os.environ.get('DB_PORT', '5432')
+    db_host = os.environ.get('INVENTORY_DB_HOST', 'localhost')
+    db_port = os.environ.get('INVENTORY_DB_PORT', '5432')
     
-    if db_host == 'localhost' and not os.environ.get('DOCKER_ENV'):
+    if db_host == 'localhost' and not os.environ.get('INVENTORY_DOCKER_ENV'):
         logger.info("DB test skipped - local dev")
         return  # ← DANS fonction (4 espaces indent)
     
@@ -173,14 +181,75 @@ STATIC_ROOT = BASE_DIR / 'static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+
+
+# CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'authorization',
+    'content-type',
+    'accept',
+    'origin',
+    'user-agent',
+    'dnt',
+    'cache-control',
+    'x-requested-with',
+]
+
+
+# settings.py → REST_FRAMEWORK
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.TokenAuthentication'],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25,
+}
+
+
+REST_FRAMEWORK = {
+    # ── Spectacular ──────────────────────────
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # ← ajouter
+
+    # ── Auth ─────────────────────────────────
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+
+    # ── Pagination ───────────────────────────
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 25,
+
+    # ── Filtres ──────────────────────────────
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+}
+
+# ── Configuration Spectacular ─────────────────
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AS CMDB Inventory API',
+    'DESCRIPTION': 'API REST pour la gestion d\'inventaire matériel IT — reconditionnement',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/',
+}
+
 # DRF Spectacular Configuration (OpenAPI 3 documentation)
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'CMDB Inventory API',
     'DESCRIPTION': 'API REST pour la gestion d\'inventaire matériel',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
-    'SCHEMA_PATH_PREFIX': r'/api/',
     'TAGS': [
         {'name': 'Assets', 'description': 'Gestion des équipements'},
         {'name': 'Categories', 'description': 'Gestion des catégories'},

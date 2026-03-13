@@ -1,4 +1,5 @@
 import random
+from django.utils import timezone
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
@@ -7,37 +8,108 @@ from faker import Faker
 
 fake = Faker('fr_FR')
 
+# ── Images réelles par marque/modèle ──────────────────────
+ASSET_PHOTOS = {
+    'Dell': {
+        'OptiPlex 7090':    'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/desktops/optiplex-desktops/optiplex-7090/media-gallery/optiplex-7090-desktop-gallery-4.psd?fmt=png-alpha&pscan=auto&scl=1&hei=402&wid=402',
+        'Latitude 5520':    'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/latitude-notebooks/latitude-15-5520/media-gallery/notebook-latitude-15-5520-gallery-4.psd?fmt=png-alpha&pscan=auto&scl=1&hei=402&wid=402',
+        'PowerEdge R740':   'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/servers/poweredge/poweredge-r740/media-gallery/server-poweredge-r740-gallery-1.psd?fmt=png-alpha&pscan=auto&scl=1',
+        'UltraSharp U2722': 'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/peripherals/monitors/u-series/u2722/media-gallery/monitor-u2722-gallery-1.psd?fmt=png-alpha&pscan=auto&scl=1',
+    },
+    'HP': {
+        'EliteBook 840 G8': 'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c08055652.png',
+        'ProDesk 600':      'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c07195013.png',
+        'ProLiant DL380':   'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c04128830.png',
+        'LaserJet Pro':     'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c07627866.png',
+    },
+    'Cisco': {
+        'Catalyst 9200': 'https://www.cisco.com/c/dam/en/us/products/switches/catalyst-9200-series-switches/index/jcr:content/Grid/category_atl/layout-category-atl/anchor_info/image.img.jpg/1588266977086.jpg',
+        'ISR 4331':      'https://www.cisco.com/c/dam/en/us/products/routers/4000-series-integrated-services-routers-isr/index/jcr:content/Grid/category_atl/layout-category-atl/anchor_info_127906950/image.img.jpg/1588267010029.jpg',
+        'ASA 5506-X':    'https://www.cisco.com/c/dam/en/us/products/security/asa-5500-x-series-firewalls/index/jcr:content/Grid/category_atl/layout-category-atl/anchor_info/image.img.jpg/1519940808892.jpg',
+        'Meraki MX68':   'https://meraki.cisco.com/wp-content/uploads/2020/01/mx68-front.png',
+    },
+    'Lenovo': {
+        'ThinkPad X1 Carbon': 'https://p1-ofp.static.pub/medias/bWFzdGVyfHJvb3R8MjQ2NzQ5fGltYWdlL3BuZ3xoNTYvaGZhLzE0NjE3NzY1NzI5NTY2LnBuZw/lenovo-laptop-thinkpad-x1-carbon-gen-11-14-hero.png',
+        'ThinkCentre M90':    'https://p1-ofp.static.pub/medias/bWFzdGVyfHJvb3R8MTIzNTUyfGltYWdlL3BuZ3xoMTYvaGNiLzE0NjIxMzI1NTI4OTI2LnBuZw/lenovo-desktops-thinkcentre-m90t-gen3-hero.png',
+        'ThinkSystem SR650':  'https://lenovopress.lenovo.com/assets/images/LP0955/ThinkSystem%20SR650%20V2%20server.jpg',
+    },
+    'Apple': {
+        'MacBook Pro M3': 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310?wid=400&hei=400&fmt=jpeg&qlt=90',
+        'Mac Mini M2':    'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mac-mini-hero-202301?wid=400&hei=400&fmt=jpeg&qlt=90',
+        'iPhone 15 Pro':  'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-1inch-naturaltitanium?wid=400&hei=400&fmt=jpeg&qlt=90',
+    },
+    'Synology': {
+        'DS923+':  'https://www.synology.com/img/products/detail/DS923plus/heading.png',
+        'RS1221+': 'https://www.synology.com/img/products/detail/RS1221plus/heading.png',
+        'DS220+':  'https://www.synology.com/img/products/detail/DS220plus/heading.png',
+    },
+    'APC': {
+        'Smart-UPS 1500': 'https://download.schneider-electric.com/files?p_Reference=SMT1500I&p_EnDocType=Product%20image&p_File_Id=7900001516',
+        'Back-UPS 650':   'https://download.schneider-electric.com/files?p_Reference=BE650G2-FR&p_EnDocType=Product%20image',
+        'Smart-UPS 3000': 'https://download.schneider-electric.com/files?p_Reference=SMT3000I&p_EnDocType=Product%20image',
+    },
+    'Brother': {
+        'MFC-L8900CDW': 'https://www.brother.fr/-/media/Brother/Products/MFC-L8900CDW/MFC-L8900CDW_main.ashx',
+        'HL-L6400DW':   'https://www.brother.fr/-/media/Brother/Products/HL-L6400DW/HL-L6400DW_main.ashx',
+        'DCP-L2550DN':  'https://www.brother.fr/-/media/Brother/Products/DCP-L2550DN/DCP-L2550DN_main.ashx',
+    },
+    'Samsung': {
+        'Galaxy Tab S9': 'https://image-us.samsung.com/SamsungUS/home/mobile/galaxy-tab/all-galaxy-tabs/07132023/tab-s9-wifi-graphite-400x400.jpg',
+        'Odyssey G7':    'https://image-us.samsung.com/SamsungUS/home/computing/monitors/all-monitors/06112020/lc32g75tqsnxza-400x400.jpg',
+        'T7 Shield SSD': 'https://image-us.samsung.com/SamsungUS/home/computing/memory-storage/portable-ssd/06062022/mu-pe2t0s-400x400.jpg',
+    },
+    'Asus': {
+        'ZenBook 14':      'https://dlcdnwebimgs.asus.com/gain/B9560CB6-4EB1-4EC6-B6A9-C09E05C8BB1A/w800',
+        'ExpertCenter D7': 'https://dlcdnwebimgs.asus.com/gain/B1E4A4F3-B1AC-4A7D-B3E7-F6A7B1E4A4F3/w800',
+        'RT-AX88U':        'https://dlcdnwebimgs.asus.com/gain/E7E6E5E4-E3E2-E1E0-DFDE-DDDCDBDAD9D8/w800',
+    },
+}
+
+# ── Fallback par catégorie (images Wikipedia IT réelles) ──
+CATEGORY_FALLBACK_PHOTOS = {
+    'laptop':   'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Laptop_600.jpg/320px-Laptop_600.jpg',
+    'desktop':  'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/PC_Systemeinheit_vorne_Karsten_N.jpg/320px-PC_Systemeinheit_vorne_Karsten_N.jpg',
+    'server':   'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Dell_PowerEdge_702x.jpg/320px-Dell_PowerEdge_702x.jpg',
+    'monitor':  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Monitor_computer.jpg/320px-Monitor_computer.jpg',
+    'router':   'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Cisco_router.jpg/320px-Cisco_router.jpg',
+    'switch':   'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Cisco_Catalyst_702x.jpg/320px-Cisco_Catalyst_702x.jpg',
+    'printer':  'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/HP_LaserJet_1020.jpg/320px-HP_LaserJet_1020.jpg',
+    'nas':      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Synology_DS216play.jpg/320px-Synology_DS216play.jpg',
+    'ups':      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/APC_Back-UPS_CS_350.jpg/320px-APC_Back-UPS_CS_350.jpg',
+    'phone':    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Cisco_IP_Phone_7960.jpg/320px-Cisco_IP_Phone_7960.jpg',
+}
+
 CATEGORIES = [
-    ('Serveur', 'server'),
-    ('PC Portable', 'laptop'),
-    ('PC Fixe', 'desktop'),
-    ('Routeur', 'router'),
-    ('Switch', 'switch'),
-    ('Écran', 'monitor'),
-    ('Imprimante', 'printer'),
-    ('Téléphone IP', 'phone'),
-    ('NAS', 'nas'),
-    ('Onduleur', 'ups'),
+    ('Serveur',      'server'),
+    ('PC Portable',  'laptop'),
+    ('PC Fixe',      'desktop'),
+    ('Routeur',      'router'),
+    ('Switch',       'switch'),
+    ('Ecran',        'monitor'),
+    ('Imprimante',   'printer'),
+    ('Telephone IP', 'phone'),
+    ('NAS',          'nas'),
+    ('Onduleur',     'ups'),
 ]
 
 BRANDS = [
-    ('Dell', 'https://dell.com'),
-    ('HP', 'https://hp.com'),
-    ('Cisco', 'https://cisco.com'),
-    ('Lenovo', 'https://lenovo.com'),
-    ('Asus', 'https://asus.com'),
-    ('Brother', 'https://brother.com'),
-    ('Apple', 'https://apple.com'),
-    ('Samsung', 'https://samsung.com'),
+    ('Dell',     'https://dell.com'),
+    ('HP',       'https://hp.com'),
+    ('Cisco',    'https://cisco.com'),
+    ('Lenovo',   'https://lenovo.com'),
+    ('Asus',     'https://asus.com'),
+    ('Brother',  'https://brother.com'),
+    ('Apple',    'https://apple.com'),
+    ('Samsung',  'https://samsung.com'),
     ('Synology', 'https://synology.com'),
-    ('APC', 'https://apc.com'),
+    ('APC',      'https://apc.com'),
 ]
 
 LOCATIONS = [
     ('DataCenter Lyon',   'datacenter'),
     ('Bureau Direction',  'office'),
-    ('Salle Réunion A',   'office'),
-    ('Salle Réunion B',   'office'),
+    ('Salle Reunion A',   'office'),
+    ('Salle Reunion B',   'office'),
     ('Stock IT',          'warehouse'),
     ('Agence Casablanca', 'office'),
     ('Salle Serveurs',    'datacenter'),
@@ -69,56 +141,56 @@ ASSET_MODELS = {
     'Synology': ['DS923+', 'RS1221+', 'DS220+'],
     'APC':      ['Smart-UPS 1500', 'Back-UPS 650', 'Smart-UPS 3000'],
 }
-tags = []
-for name, color in TAGS:
-    obj, _ = Tag.objects.get_or_create(
-        name=name,
-        defaults={
-            'color': color,
-            'description': fake.sentence()  # ← ajouté
-        }
-    )
-    tags.append(obj)
+
+
+def get_asset_photo(brand_name: str, model_name: str, category_icon: str) -> str:
+    """Retourne une URL photo réaliste pour un asset IT."""
+    brand_photos = ASSET_PHOTOS.get(brand_name, {})
+    if model_name in brand_photos:
+        return brand_photos[model_name]
+    if brand_photos:
+        return next(iter(brand_photos.values()))
+    return CATEGORY_FALLBACK_PHOTOS.get(category_icon, '')
 
 
 class Command(BaseCommand):
-    help = "Génère données fake réalistes pour l'inventaire IT"
+    help = "Genere donnees fake realistes pour l'inventaire IT"
 
     def add_arguments(self, parser):
         parser.add_argument('--assets',    type=int, default=100)
         parser.add_argument('--movements', type=int, default=200)
         parser.add_argument('--flush',     action='store_true',
-                            help='Vider les tables avant génération')
+                            help='Vider les tables avant generation')
 
-    def handle(self, *args, **options):  # ← TOUT ce qui suit doit être indenté ici
+    def handle(self, *args, **options):
 
         if options['flush']:
-            self.stdout.write(self.style.WARNING('🗑️  Flush...'))
+            self.stdout.write(self.style.WARNING('Flush...'))
             AssetMovement.objects.all().delete()
             Asset.objects.all().delete()
             Tag.objects.all().delete()
             Location.objects.all().delete()
             Brand.objects.all().delete()
             Category.objects.all().delete()
-            self.stdout.write('✅ Tables vidées')
+            self.stdout.write('Tables videes')
 
-        self.stdout.write('🚀 Génération données fake...\n')
+        self.stdout.write('Generation donnees fake...\n')
 
-        # ── 1. Categories ──────────────────────────────
+        # ── 1. Categories ──────────────────────────────────
         categories = []
         for name, icon in CATEGORIES:
             obj, _ = Category.objects.get_or_create(
                 name=name,
                 defaults={
-                    'slug': slugify(name),
+                    'slug':        slugify(name),
                     'description': fake.sentence(nb_words=8),
-                    'icon': icon,
+                    'icon':        icon,
                 }
             )
             categories.append(obj)
-        self.stdout.write(f'  📁 {len(categories)} catégories')
+        self.stdout.write(f'  {len(categories)} categories')
 
-        # ── 2. Brands ──────────────────────────────────
+        # ── 2. Brands ──────────────────────────────────────
         brands = []
         for name, website in BRANDS:
             obj, _ = Brand.objects.get_or_create(
@@ -126,9 +198,9 @@ class Command(BaseCommand):
                 defaults={'website': website}
             )
             brands.append(obj)
-        self.stdout.write(f'  🏷️  {len(brands)} marques')
+        self.stdout.write(f'  {len(brands)} marques')
 
-        # ── 3. Locations ───────────────────────────────
+        # ── 3. Locations ────────────────────────────────────
         locations = []
         for name, ltype in LOCATIONS:
             obj, _ = Location.objects.get_or_create(
@@ -137,35 +209,47 @@ class Command(BaseCommand):
                 defaults={'description': fake.sentence()}
             )
             locations.append(obj)
-        self.stdout.write(f'  📍 {len(locations)} emplacements')
+        self.stdout.write(f'  {len(locations)} emplacements')
 
-        # ── 4. Tags ────────────────────────────────────
+        # ── 4. Tags ─────────────────────────────────────────
         tags = []
         for name, color in TAGS:
             obj, _ = Tag.objects.get_or_create(
                 name=name,
-                defaults={'color': color}
+                defaults={
+                    'color':       color,
+                    'description': fake.sentence(),
+                }
             )
             tags.append(obj)
-        self.stdout.write(f'  🔖 {len(tags)} tags')
+        self.stdout.write(f'  {len(tags)} tags')
 
-        # ── 5. Assets ──────────────────────────────────
+        # ── 5. Assets ───────────────────────────────────────
         created_count = 0
         skipped_count = 0
 
         for _ in range(options['assets']):
-            brand = random.choice(brands)
-            model_name = random.choice(ASSET_MODELS.get(brand.name, ['Modèle Générique']))
-            serial = fake.bothify(text='SN-????-########').upper()
+            brand      = random.choice(brands)
+            category   = random.choice(categories)
+            model_name = random.choice(ASSET_MODELS.get(brand.name, ['Modele Generique']))
+            ## serial     = fake.bothify(text='SN-????-########').upper()
+            ts = timezone.now().strftime('%y%m%d%H%M%S')
+            serial = f"SN-{ts}-{fake.bothify('????').upper()}"
 
             try:
                 asset = Asset.objects.create(
-                    name=f"{brand.name} {model_name}",
-                    category=random.choice(categories),
+                    name=f"{brand.name} {model_name}"[:100],       # ← ajouter [:100]
+
+                    model=model_name[:100],    # ← ajouter [:100]
+
+                    serial_number=serial[:10], # ← ajouter [:10]
+
+                    assigned_to=fake.name()[:100] if random.random() > 0.3 else None,  # ← [:100]
+                    category=category,
                     brand=brand,
-                    model=model_name,
-                    serial_number=serial,
-                    description=fake.text(max_nb_chars=200),
+                    # ✅ Après
+                    description=fake.text(max_nb_chars=200)[:200],
+
                     purchase_date=fake.date_between(start_date='-4y', end_date='today'),
                     purchase_price=fake.pydecimal(
                         left_digits=4, right_digits=2, positive=True,
@@ -173,7 +257,6 @@ class Command(BaseCommand):
                     ),
                     warranty_end=fake.date_between(start_date='today', end_date='+3y'),
                     current_location=random.choice(locations),
-                    assigned_to=fake.name() if random.random() > 0.3 else None,
                     status=random.choices(
                         ['active', 'inactive', 'archived'],
                         weights=[70, 20, 10]
@@ -182,23 +265,26 @@ class Command(BaseCommand):
                         ['new', 'used', 'damaged'],
                         weights=[20, 70, 10]
                     )[0],
-                    photo=fake.image_url(width=200, height=200),
+                    photo=get_asset_photo(brand.name, model_name, category.icon),
                 )
                 asset.tags.set(random.sample(tags, random.randint(1, 3)))
                 created_count += 1
-
-            except Exception as e:
-                if 'UNIQUE' in str(e):
+            except Asset.MultipleObjectsReturned:
+                skipped_count += 1
+            except Exception as err:
+                e_str = str(err).upper()
+                if 'UNIQUE' in e_str or 'DUPLICATE' in e_str or 'INTEGRITY' in e_str:
                     skipped_count += 1
-                else:
+                    continue   # ← réessaye avec un nouveau serial
+                else:   
                     raise
 
         self.stdout.write(
-            self.style.SUCCESS(f'  💻 {created_count} assets créés')
-            + (f' ({skipped_count} doublons ignorés)' if skipped_count else '')
+            self.style.SUCCESS(f'  {created_count} assets crees')
+            + (f' ({skipped_count} doublons ignores)' if skipped_count else '')
         )
 
-        # ── 6. Movements ───────────────────────────────
+        # ── 6. Movements ────────────────────────────────────
         all_assets = list(Asset.objects.select_related('current_location').all())
         mv_count = 0
 
@@ -208,15 +294,16 @@ class Command(BaseCommand):
                 asset=asset,
                 from_location=asset.current_location,
                 to_location=random.choice(locations),
-                moved_by=fake.name(),
                 moved_at=fake.date_time_between(
                     start_date='-2y',
                     end_date='now',
                     tzinfo=timezone.get_current_timezone()
                 ),
-                notes=fake.sentence() if random.random() > 0.5 else None,
+                moved_by=fake.name()[:100],                     # ← ajouter [:100]
+
+                notes=fake.sentence()[:500] if random.random() > 0.5 else None,  # ← TextField mais 
             )
             mv_count += 1
 
-        self.stdout.write(self.style.SUCCESS(f'  🔄 {mv_count} mouvements'))
-        self.stdout.write('\n' + self.style.SUCCESS('🎉 Inventaire fake prêt !'))
+        self.stdout.write(self.style.SUCCESS(f'  {mv_count} mouvements'))
+        self.stdout.write('\n' + self.style.SUCCESS('Inventaire fake pret !'))

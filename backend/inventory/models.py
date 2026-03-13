@@ -76,7 +76,7 @@ class Asset(TimeStampMixin):
     brand            = models.ForeignKey(Brand, on_delete=models.SET_NULL,
                                          null=True, related_name='assets')
     model            = models.CharField(max_length=100)
-    serial_number    = models.CharField(max_length=100, unique=True)
+    serial_number    = models.CharField(max_length=150, unique=True)
     description      = models.TextField(blank=True, null=True)
     purchase_date    = models.DateField(blank=True, null=True)
     purchase_price   = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)

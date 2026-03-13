@@ -14,7 +14,8 @@ echo "PostgreSQL is ready!"
 
 # Exécuter les migrations
 echo "Running migrations..."
-python manage.py makemigrations
+python manage.py migrate
+python manage.py makemigrations inventory maintenance scanner stock --noinput
 python manage.py migrate
 
 # Collecter les fichiers statiques

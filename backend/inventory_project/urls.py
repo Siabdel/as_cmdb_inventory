@@ -5,13 +5,21 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     # Interface d'administration Django
     path('admin/', admin.site.urls),
     
     # API REST
-    path('api/', include('inventory.urls')),
+    path('api/v1/inventory/',  include('inventory.urls')),# URLs de l'app inventory (CRUD assets, catégories, etc.)
+    path('api/v1/maintenance/', include('maintenance.urls')),
+    path('api/v1/scanner/', include('scanner.urls')), # URLs spécifiques au scanner QR code
+    path('api/v1/maintenance/', include('maintenance.urls')), # URLs spécifiques à la maintenance
+    # config/urls.py
+    path('api/v1/stock/', include('stock.urls')),
+
+
     
     # Authentification DRF
     path('api-auth/', include('rest_framework.urls')),
@@ -33,6 +41,9 @@ if settings.DEBUG:
         # Redoc
         path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     ]
+
+    # config/urls.py
+
 
 # Configuration de l'admin
 admin.site.site_header = "CMDB Inventory - Administration"

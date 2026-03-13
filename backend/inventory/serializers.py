@@ -1,323 +1,180 @@
 """
 Serializers Django REST Framework pour l'application CMDB Inventory
 """
-
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Location, Category, Brand, Tag, Asset, AssetMovement
+from .models import Category, Brand, Location, Tag, Asset, AssetMovement
 
 
-class UserSerializer(serializers.ModelSerializer):
-    """Serializer pour les utilisateurs"""
-    
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email']
+# ── Serializers de référence (lecture légère) ──────────────
 
-
-class LocationSerializer(serializers.ModelSerializer):
-    """Serializer pour les emplacements"""
-    
-    parent_name = serializers.CharField(source='parent.name', read_only=True)
-    full_path = serializers.CharField(read_only=True)
-    children_count = serializers.SerializerMethodField()
-    assets_count = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Location
-        fields = [
-            'id', 'name', 'type', 'parent', 'parent_name', 'description',
-            'full_path', 'children_count', 'assets_count',
-            'created_at', 'updated_at'
-        ]
-    
-    def get_children_count(self, obj):
-        """Retourne le nombre d'emplacements enfants"""
-        return obj.children.count()
-    
-    def get_assets_count(self, obj):
-        """Retourne le nombre d'assets dans cet emplacement"""
-        return obj.assets.count()
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    """Serializer pour les catégories"""
-    
-    parent_name = serializers.CharField(source='parent.name', read_only=True)
-    children_count = serializers.SerializerMethodField()
-    assets_count = serializers.SerializerMethodField()
-    
+class CategoryMinSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = [
-            'id', 'name', 'slug', 'parent', 'parent_name', 'description',
-            'icon', 'children_count', 'assets_count',
-            'created_at', 'updated_at'
-        ]
-    
-    def get_children_count(self, obj):
-        """Retourne le nombre de catégories enfants"""
-        return obj.children.count()
-    
-    def get_assets_count(self, obj):
-        """Retourne le nombre d'assets dans cette catégorie"""
-        return obj.assets.count()
+        fields = ['id', 'name', 'slug', 'icon']
 
 
-class BrandSerializer(serializers.ModelSerializer):
-    """Serializer pour les marques"""
-    
-    assets_count = serializers.SerializerMethodField()
-    
+class BrandMinSerializer(serializers.ModelSerializer):
     class Meta:
         model = Brand
-        fields = [
-            'id', 'name', 'website', 'logo', 'assets_count',
-            'created_at', 'updated_at'
-        ]
-    
-    def get_assets_count(self, obj):
-        """Retourne le nombre d'assets de cette marque"""
-        return obj.assets.count()
+        fields = ['id', 'name', 'logo']
+
+
+class LocationMinSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'type']
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Serializer pour les étiquettes"""
-    
-    assets_count = serializers.SerializerMethodField()
-    
     class Meta:
         model = Tag
-        fields = [
-            'id', 'name', 'color', 'description', 'assets_count', 'created_at'
-        ]
-    
-    def get_assets_count(self, obj):
-        """Retourne le nombre d'assets avec cette étiquette"""
-        return obj.assets.count()
+        fields = ['id', 'name', 'color', 'description']
 
 
-class AssetListSerializer(serializers.ModelSerializer):
-    """Serializer pour la liste des assets (version allégée)"""
-    
-    category_name = serializers.CharField(source='category.name', read_only=True)
-    brand_name = serializers.CharField(source='brand.name', read_only=True)
-    location_name = serializers.CharField(source='current_location.name', read_only=True)
-    assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True)
-    warranty_status = serializers.CharField(read_only=True)
-    tags_list = TagSerializer(source='tags', many=True, read_only=True)
-    
+# ── Category ───────────────────────────────────────────────
+
+class CategorySerializer(serializers.ModelSerializer):
+    asset_count = serializers.IntegerField(source='assets.count', read_only=True)
+
     class Meta:
-        model = Asset
-        fields = [
-            'id', 'internal_code', 'name', 'category', 'category_name',
-            'brand', 'brand_name', 'model', 'serial_number', 'status',
-            'current_location', 'location_name', 'assigned_to', 'assigned_to_name',
-            'warranty_status', 'tags_list', 'created_at', 'updated_at'
-        ]
+        model = Category
+        fields = ['id', 'name', 'slug', 'description', 'icon',
+                  'asset_count', 'created_at', 'updated_at']
+        read_only_fields = ['slug', 'created_at', 'updated_at']
 
-
-class AssetDetailSerializer(serializers.ModelSerializer):
-    """Serializer détaillé pour les assets"""
-    
-    category_detail = CategorySerializer(source='category', read_only=True)
-    brand_detail = BrandSerializer(source='brand', read_only=True)
-    location_detail = LocationSerializer(source='current_location', read_only=True)
-    assigned_to_detail = UserSerializer(source='assigned_to', read_only=True)
-    tags_detail = TagSerializer(source='tags', many=True, read_only=True)
-    warranty_status = serializers.CharField(read_only=True)
-    is_warranty_expired = serializers.BooleanField(read_only=True)
-    movements_count = serializers.SerializerMethodField()
-    qr_code_url = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Asset
-        fields = [
-            'id', 'internal_code', 'name', 'category', 'category_detail',
-            'brand', 'brand_detail', 'model', 'serial_number', 'description',
-            'purchase_date', 'purchase_price', 'warranty_end', 'warranty_status',
-            'is_warranty_expired', 'status', 'current_location', 'location_detail',
-            'assigned_to', 'assigned_to_detail', 'tags', 'tags_detail',
-            'qr_code_image', 'qr_code_url', 'notes', 'movements_count',
-            'created_at', 'updated_at'
-        ]
-    
-    def get_movements_count(self, obj):
-        """Retourne le nombre de mouvements de cet asset"""
-        return obj.movements.count()
-    
-    def get_qr_code_url(self, obj):
-        """Retourne l'URL complète du QR code"""
-        if obj.qr_code_image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.qr_code_image.url)
-            return obj.qr_code_image.url
-        return None
-
-
-class AssetCreateUpdateSerializer(serializers.ModelSerializer):
-    """Serializer pour la création/modification d'assets"""
-    
-    class Meta:
-        model = Asset
-        fields = [
-            'internal_code', 'name', 'category', 'brand', 'model',
-            'serial_number', 'description', 'purchase_date', 'purchase_price',
-            'warranty_end', 'status', 'current_location', 'assigned_to',
-            'tags', 'notes'
-        ]
-    
-    def validate_internal_code(self, value):
-        """Valide l'unicité du code interne"""
-        instance = getattr(self, 'instance', None)
-        if Asset.objects.filter(internal_code=value).exclude(
-            id=instance.id if instance else None
-        ).exists():
-            raise serializers.ValidationError(
-                "Un équipement avec ce code interne existe déjà."
-            )
-        return value
-    
-    def validate_serial_number(self, value):
-        """Valide l'unicité du numéro de série s'il est fourni"""
-        if not value:
-            return value
-        
-        instance = getattr(self, 'instance', None)
-        if Asset.objects.filter(serial_number=value).exclude(
-            id=instance.id if instance else None
-        ).exists():
-            raise serializers.ValidationError(
-                "Un équipement avec ce numéro de série existe déjà."
-            )
+    def validate_name(self, value):
+        from django.utils.text import slugify
+        qs = Category.objects.filter(slug=slugify(value))
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Une catégorie avec ce nom existe déjà.")
         return value
 
-
-class AssetMovementSerializer(serializers.ModelSerializer):
-    """Serializer pour les mouvements d'assets"""
-    
-    asset_code = serializers.CharField(source='asset.internal_code', read_only=True)
-    asset_name = serializers.CharField(source='asset.name', read_only=True)
-    from_location_name = serializers.CharField(source='from_location.name', read_only=True)
-    to_location_name = serializers.CharField(source='to_location.name', read_only=True)
-    moved_by_name = serializers.CharField(source='moved_by.get_full_name', read_only=True)
-    
-    class Meta:
-        model = AssetMovement
-        fields = [
-            'id', 'asset', 'asset_code', 'asset_name',
-            'from_location', 'from_location_name',
-            'to_location', 'to_location_name',
-            'moved_by', 'moved_by_name', 'move_type', 'note', 'created_at'
-        ]
-        read_only_fields = ['moved_by']
-    
     def create(self, validated_data):
-        """Crée un nouveau mouvement"""
-        # Ajouter l'utilisateur actuel
-        validated_data['moved_by'] = self.context['request'].user
-        
-        # Définir l'emplacement source comme l'emplacement actuel de l'asset
-        asset = validated_data['asset']
-        validated_data['from_location'] = asset.current_location
-        
+        from django.utils.text import slugify
+        validated_data['slug'] = slugify(validated_data['name'])
         return super().create(validated_data)
 
 
-class AssetMoveFromScanSerializer(serializers.Serializer):
-    """Serializer pour déplacer un asset via scan QR"""
-    
-    asset_id = serializers.UUIDField()
-    target_location_id = serializers.IntegerField()
-    note = serializers.CharField(required=False, allow_blank=True)
-    
-    def validate_asset_id(self, value):
-        """Valide que l'asset existe"""
-        try:
-            asset = Asset.objects.get(id=value)
-            return asset
-        except Asset.DoesNotExist:
-            raise serializers.ValidationError("Équipement non trouvé.")
-    
-    def validate_target_location_id(self, value):
-        """Valide que l'emplacement cible existe"""
-        try:
-            location = Location.objects.get(id=value)
-            return location
-        except Location.DoesNotExist:
-            raise serializers.ValidationError("Emplacement non trouvé.")
-    
-    def create(self, validated_data):
-        """Crée le mouvement et met à jour l'asset"""
-        asset = validated_data['asset_id']
-        target_location = validated_data['target_location_id']
-        note = validated_data.get('note', '')
-        user = self.context['request'].user
-        
-        # Créer le mouvement
-        movement = AssetMovement.objects.create(
-            asset=asset,
-            from_location=asset.current_location,
-            to_location=target_location,
-            moved_by=user,
-            move_type='move',
-            note=note
-        )
-        
-        return movement
+# ── Brand ──────────────────────────────────────────────────
+
+class BrandSerializer(serializers.ModelSerializer):
+    asset_count = serializers.IntegerField(source='assets.count', read_only=True)
+
+    class Meta:
+        model = Brand
+        fields = ['id', 'name', 'website', 'logo',
+                  'asset_count', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
 
-class DashboardSummarySerializer(serializers.Serializer):
-    """Serializer pour le résumé du dashboard"""
-    
-    total_assets = serializers.IntegerField()
-    assets_by_status = serializers.DictField()
-    assets_by_location = serializers.DictField()
-    assets_by_category = serializers.DictField()
-    recent_movements = AssetMovementSerializer(many=True)
-    assets_needing_maintenance = AssetListSerializer(many=True)
-    warranty_expiring_soon = AssetListSerializer(many=True)
-    
-    
-    class AssetSerializer(serializers.ModelSerializer):
-        class Meta(AssetDetailSerializer.Meta):
-            pass
+# ── Location ───────────────────────────────────────────────
 
-class AssetSerializer(serializers.ModelSerializer):
-    """Serializer complet pour les assets, utilisé pour les détails et les listes"""
-    
-    category_detail = CategorySerializer(source='category', read_only=True)
-    brand_detail = BrandSerializer(source='brand', read_only=True)
-    location_detail = LocationSerializer(source='current_location', read_only=True)
-    assigned_to_detail = UserSerializer(source='assigned_to', read_only=True)
-    tags_detail = TagSerializer(source='tags', many=True, read_only=True)
-    warranty_status = serializers.CharField(read_only=True)
-    is_warranty_expired = serializers.BooleanField(read_only=True)
-    movements_count = serializers.SerializerMethodField()
-    qr_code_url = serializers.SerializerMethodField()
-    
+class LocationSerializer(serializers.ModelSerializer):
+    asset_count = serializers.IntegerField(source='assets.count', read_only=True)
+    parent_name = serializers.CharField(source='parent.name', read_only=True)
+
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'type', 'description',
+                  'parent', 'parent_name', 'asset_count',
+                  'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+# ── AssetMovement ──────────────────────────────────────────
+
+class AssetMovementSerializer(serializers.ModelSerializer):
+    from_location_detail = LocationMinSerializer(source='from_location', read_only=True)
+    to_location_detail   = LocationMinSerializer(source='to_location', read_only=True)
+
+    class Meta:
+        model = AssetMovement
+        fields = ['id', 'asset', 'from_location', 'from_location_detail',
+                  'to_location', 'to_location_detail',
+                  'moved_by', 'moved_at', 'notes', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
+
+
+# ── Asset List (léger pour dashboard/tableaux) ─────────────
+
+class AssetListSerializer(serializers.ModelSerializer):
+    category = CategoryMinSerializer(read_only=True)
+    brand    = BrandMinSerializer(read_only=True)
+    location = LocationMinSerializer(source='current_location', read_only=True)
+    tags     = TagSerializer(many=True, read_only=True)
+
     class Meta:
         model = Asset
         fields = [
-            'id', 'internal_code', 'name', 'category', 'category_detail',
-            'brand', 'brand_detail', 'model', 'serial_number', 'description',
-            'purchase_date', 'purchase_price', 'warranty_end', 'warranty_status',
-            'is_warranty_expired', 'status', 'current_location', 'location_detail',
-            'assigned_to', 'assigned_to_detail', 'tags', 'tags_detail',
-            'qr_code_image', 'qr_code_url', 'notes', 'movements_count',
-            'created_at', 'updated_at'
+            'id', 'name', 'model', 'serial_number',
+            'category', 'brand', 'location',
+            'status', 'condition_state',
+            'assigned_to', 'tags', 'photo',
+            'purchase_date', 'warranty_end',
+            'created_at', 'updated_at',
         ]
-    
-    def get_movements_count(self, obj):
-        """Retourne le nombre de mouvements de cet asset"""
-        return obj.movements.count()
-    
-    def get_qr_code_url(self, obj):
-        """Retourne l'URL complète du QR code"""
-        if obj.qr_code_image:
-            request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.qr_code_image.url)
-            return obj.qr_code_image.url
-        return None
+
+
+# ── Asset Detail (complet pour fiche individuelle) ─────────
+
+class AssetDetailSerializer(serializers.ModelSerializer):
+    category         = CategoryMinSerializer(read_only=True)
+    brand            = BrandMinSerializer(read_only=True)
+    current_location = LocationMinSerializer(read_only=True)
+    tags             = TagSerializer(many=True, read_only=True)
+    movements        = AssetMovementSerializer(many=True, read_only=True)
+
+    # Champs write-only pour create/update
+    category_id         = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), source='category', write_only=True)
+    brand_id            = serializers.PrimaryKeyRelatedField(
+        queryset=Brand.objects.all(), source='brand', write_only=True)
+    current_location_id = serializers.PrimaryKeyRelatedField(
+        queryset=Location.objects.all(), source='current_location', write_only=True)
+    tag_ids             = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), source='tags',
+        many=True, write_only=True, required=False)
+
+    class Meta:
+        model = Asset
+        fields = [
+            'id', 'name', 'model', 'serial_number', 'description',
+            'category', 'category_id',
+            'brand', 'brand_id',
+            'current_location', 'current_location_id',
+            'assigned_to', 'status', 'condition_state',
+            'purchase_date', 'purchase_price', 'warranty_end',
+            'tags', 'tag_ids', 'photo', 'movements',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags', [])
+        asset = super().create(validated_data)
+        asset.tags.set(tags)
+        return asset
+
+    def update(self, instance, validated_data):
+        tags = validated_data.pop('tags', None)
+        asset = super().update(instance, validated_data)
+        if tags is not None:
+            asset.tags.set(tags)
+        return asset
+
+
+# ── Dashboard Stats (lecture seule) ───────────────────────
+
+class DashboardStatsSerializer(serializers.Serializer):
+    total_assets      = serializers.IntegerField()
+    active_assets     = serializers.IntegerField()
+    inactive_assets   = serializers.IntegerField()
+    archived_assets   = serializers.IntegerField()
+    assets_new        = serializers.IntegerField()
+    assets_used       = serializers.IntegerField()
+    assets_damaged    = serializers.IntegerField()
+    total_value       = serializers.DecimalField(max_digits=12, decimal_places=2)
+    low_warranty      = serializers.IntegerField()  # warranty < 30 jours
+    recent_movements  = AssetMovementSerializer(many=True)
