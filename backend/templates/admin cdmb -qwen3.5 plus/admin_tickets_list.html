@@ -1,0 +1,197 @@
+<!-- templates/admin/tickets/list.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Tickets Maintenance - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/tickets.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="tickets-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">🔧 Maintenance</h2>
+            <p class="text-muted mb-0">[[ totalTickets ]] tickets • [[ overdueCount ]] en retard</p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button :class="{ active: viewMode === 'kanban' }" @click="viewMode = 'kanban'">
+                    📋 Kanban
+                </button>
+                <button :class="{ active: viewMode === 'table' }" @click="viewMode = 'table'">
+                    📊 Tableau
+                </button>
+            </div>
+            <a href="/admin/tickets/new/" class="btn btn-primary" style="background: #2563eb; border:none;">
+                ➕ Nouveau Ticket
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card-cmdb p-3 mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control bg-dark border-secondary text-white"
+                       placeholder="Rechercher..." v-model="filters.search" @input="debounceSearch">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.priority">
+                    <option value="">Toutes priorités</option>
+                    <option value="critique">🔴 Critique</option>
+                    <option value="eleve">🟠 Élevée</option>
+                    <option value="moyen">🔵 Moyenne</option>
+                    <option value="bas">⚪ Basse</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.assignee">
+                    <option value="">Tous techniciens</option>
+                    <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
+                        [[ tech.username ]]
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.asset">
+                    <option value="">Tous assets</option>
+                    <option v-for="asset in recentAssets" :key="asset.id" :value="asset.id">
+                        [[ asset.name ]]
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-3 text-end">
+                <button class="btn btn-outline-secondary me-2" @click="resetFilters">🔄 Reset</button>
+                <button class="btn btn-outline-danger" v-if="overdueCount > 0" @click="showOverdueOnly = !showOverdueOnly">
+                    ⚠️ [[ showOverdueOnly ? 'Tous' : 'Retard uniquement' ]]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kanban View -->
+    <div v-if="viewMode === 'kanban'" class="kanban-board">
+        <div class="kanban-column column-open" 
+             v-for="column in columns" 
+             :key="column.status"
+             @dragover.prevent="onDragOver($event)"
+             @dragleave="onDragLeave($event)"
+             @drop="onDrop($event, column.status)">
+            
+            <div class="kanban-column-header" :style="{ backgroundColor: column.color }">
+                <h6>[[ column.label ]]</h6>
+                <span class="kanban-count">[[ getColumnCount(column.status) ]]</span>
+            </div>
+            
+            <div class="kanban-column-body" :class="{ 'drag-over': dragOverColumn === column.status }">
+                <div class="kanban-card" 
+                     v-for="ticket in getTicketsByStatus(column.status)" 
+                     :key="ticket.id"
+                     :class="{ overdue: isOverdue(ticket) }"
+                     draggable="true"
+                     @dragstart="onDragStart($event, ticket)"
+                     @dragend="onDragEnd($event)">
+                    
+                    <div class="kanban-card-header">
+                        <span class="kanban-card-id">#[[ ticket.id ]]</span>
+                        <span class="badge" :class="getPriorityClass(ticket.priority)">
+                            [[ getPriorityLabel(ticket.priority) ]]
+                        </span>
+                    </div>
+                    
+                    <div class="kanban-card-title">[[ ticket.subject ]]</div>
+                    
+                    <div class="kanban-card-meta">
+                        <span class="kanban-card-asset">
+                            💻 [[ ticket.asset_name || 'N/A' ]]
+                        </span>
+                        <span v-if="ticket.assignee" class="assignee-avatar" :title="ticket.assignee">
+                            [[ getInitials(ticket.assignee) ]]
+                        </span>
+                        <span v-if="isOverdue(ticket)" class="text-danger small">
+                            ⚠️ Retard
+                        </span>
+                    </div>
+                    
+                    <div class="mt-2 small text-muted">
+                        📅 [[ formatDate(ticket.created_at) ]]
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <div v-if="viewMode === 'table'" class="card-cmdb">
+        <table class="table table-dark table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Sujet</th>
+                    <th>Asset</th>
+                    <th>Priorité</th>
+                    <th>Statut</th>
+                    <th>Assigné à</th>
+                    <th>Créé le</th>
+                    <th>Échéance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="ticket in filteredTickets" :key="ticket.id" :class="{ 'table-danger': isOverdue(ticket) }">
+                    <td>#[[ ticket.id ]]</td>
+                    <td>
+                        <a :href="'/admin/tickets/' + ticket.id + '/'" class="text-white text-decoration-none">
+                            [[ ticket.subject ]]
+                        </a>
+                    </td>
+                    <td>[[ ticket.asset_name || '-' ]]</td>
+                    <td><span class="badge" :class="getPriorityClass(ticket.priority)">[[ getPriorityLabel(ticket.priority) ]]</span></td>
+                    <td><span class="badge bg-secondary">[[ ticket.status ]]</span></td>
+                    <td>[[ ticket.assignee || '-' ]]</td>
+                    <td>[[ formatDate(ticket.created_at) ]]</td>
+                    <td :class="{ 'text-danger': isOverdue(ticket) }">[[ formatDate(ticket.due_date) ]]</td>
+                    <td>
+                        <a :href="'/admin/tickets/' + ticket.id + '/'" class="btn btn-sm btn-outline-light">👁️</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card-cmdb p-3 text-center">
+                <h3 class="text-primary mb-0">[[ stats.open ]]</h3>
+                <small class="text-muted">Ouverts</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-cmdb p-3 text-center">
+                <h3 class="text-warning mb-0">[[ stats.in_progress ]]</h3>
+                <small class="text-muted">En cours</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-cmdb p-3 text-center">
+                <h3 class="text-danger mb-0">[[ overdueCount ]]</h3>
+                <small class="text-muted">En retard</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card-cmdb p-3 text-center">
+                <h3 class="text-success mb-0">[[ stats.resolved ]]</h3>
+                <small class="text-muted">Résolus (30j)</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/tickets.js' %}"></script>
+{% endblock %}

@@ -8,7 +8,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 # Configuration du routeur DRF
 
-from . import views
+from . import api_views as views 
 
 router = DefaultRouter()
 router.register('categories',  views.CategoryViewSet,      basename='category')

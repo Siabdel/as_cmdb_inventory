@@ -1,0 +1,8 @@
+# config/urls.py
+from django.urls import path
+from django.views.generic import TemplateView
+
+urlpatterns = [
+    # ... autres URLs
+    path('admin/search/', TemplateView.as_view(template_name='admin/search/results.html'), name='admin_search'),
+]

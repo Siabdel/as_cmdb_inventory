@@ -1,0 +1,236 @@
+<!-- templates/admin/assets/list.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Gestion des Assets - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/assets.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="assets-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">💻 Parc Matériel</h2>
+            <p class="text-muted mb-0">[[ totalAssets ]] assets répertoriés</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-light" @click="exportCSV">
+                📥 Export CSV
+            </button>
+            <a href="/admin/assets/new/" class="btn btn-primary" style="background: #2563eb; border:none;">
+                ➕ Nouvel Asset
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="filters-panel">
+                <h6>🔍 Filtres</h6>
+                
+                <!-- Search -->
+                <div class="mb-3">
+                    <input type="text" class="form-control bg-dark border-secondary text-white" 
+                           placeholder="Rechercher (nom, S/N...)" 
+                           v-model="filters.search" 
+                           @input="debounceSearch">
+                </div>
+
+                <!-- Category -->
+                <div class="mb-3">
+                    <h6>Catégorie</h6>
+                    <select class="form-select bg-dark border-secondary text-white" v-model="filters.category">
+                        <option value="">Toutes</option>
+                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                            [[ cat.name ]]
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Brand -->
+                <div class="mb-3">
+                    <h6>Marque</h6>
+                    <select class="form-select bg-dark border-secondary text-white" v-model="filters.brand">
+                        <option value="">Toutes</option>
+                        <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                            [[ brand.name ]]
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="mb-3">
+                    <h6>Statut</h6>
+                    <select class="form-select bg-dark border-secondary text-white" v-model="filters.status">
+                        <option value="">Tous</option>
+                        <option value="active">Actif</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="stock">En Stock</option>
+                        <option value="repair">En Réparation</option>
+                        <option value="retired">Retiré</option>
+                    </select>
+                </div>
+
+                <!-- Location -->
+                <div class="mb-3">
+                    <h6>Localisation</h6>
+                    <select class="form-select bg-dark border-secondary text-white" v-model="filters.location">
+                        <option value="">Toutes</option>
+                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                            [[ loc.name ]]
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Reset Filters -->
+                <button class="btn btn-outline-secondary w-100" @click="resetFilters">
+                    🔄 Réinitialiser
+                </button>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="filters-panel mt-3">
+                <h6>📊 Répartition</h6>
+                <div v-for="stat in statusStats" :key="stat.status" class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">[[ stat.label ]]</span>
+                    <span class="badge" :class="getStatusBadgeClass(stat.status)">[[ stat.count ]]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets Table -->
+        <div class="col-lg-9">
+            <div class="assets-table">
+                <table class="table table-dark table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" @change="toggleSelectAll" :checked="selectAll">
+                            </th>
+                            <th @click="sortBy('name')">Asset [[ sortOrder.name ]]</th>
+                            <th @click="sortBy('serial_number')">S/N [[ sortOrder.serial_number ]]</th>
+                            <th>Catégorie</th>
+                            <th>Marque</th>
+                            <th>Localisation</th>
+                            <th>Statut</th>
+                            <th width="100">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="asset in assets" :key="asset.id">
+                            <td data-label="Select">
+                                <input type="checkbox" class="form-check-input" 
+                                       v-model="selectedAssets" :value="asset.id">
+                            </td>
+                            <td data-label="Asset">
+                                <div class="d-flex align-items-center">
+                                    <img :src="asset.photo || '/static/admin_cmdb/img/no-image.png'" 
+                                         class="asset-thumb me-2" alt="[[ asset.name ]]">
+                                    <div>
+                                        <div class="fw-bold">[[ asset.name ]]</div>
+                                        <small class="text-muted">[[ asset.model || '-' ]]</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="S/N">[[ asset.serial_number || '-' ]]</td>
+                            <td data-label="Catégorie">
+                                <span class="badge bg-secondary">[[ asset.category_name || '-' ]]</span>
+                            </td>
+                            <td data-label="Marque">[[ asset.brand_name || '-' ]]</td>
+                            <td data-label="Localisation">[[ asset.location_name || '-' ]]</td>
+                            <td data-label="Statut">
+                                <span class="status-badge" :class="getStatusClass(asset.status)">
+                                    [[ asset.status ]]
+                                </span>
+                            </td>
+                            <td data-label="Actions">
+                                <div class="btn-group btn-group-sm">
+                                    <a :href="'/admin/assets/' + asset.id + '/'" class="btn btn-outline-light">
+                                        👁️
+                                    </a>
+                                    <a :href="'/admin/assets/' + asset.id + '/edit/'" class="btn btn-outline-primary">
+                                        ✏️
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr v-if="assets.length === 0">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                Aucun asset trouvé
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="text-muted">Page [[ currentPage ]] sur [[ totalPages ]]</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                            <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Précédent</a>
+                        </li>
+                        <li class="page-item" v-for="page in visiblePages" :key="page" 
+                            :class="{ active: page === currentPage }">
+                            <a class="page-link" href="#" @click.prevent="changePage(page)">[[ page ]]</a>
+                        </li>
+                        <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                            <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Suivant</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Bulk Actions -->
+            <div class="bulk-actions" v-if="selectedAssets.length > 0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>[[ selectedAssets.length ]] asset(s) sélectionné(s)</span>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-warning" @click="bulkRetire">
+                            📦 Archiver
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" @click="showMoveModal = true">
+                            📍 Déplacer
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" @click="showAssignModal = true">
+                            👤 Assigner
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move Modal -->
+    <div class="modal fade" id="moveModal" tabindex="-1" v-show="showMoveModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">📍 Déplacer les assets</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showMoveModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select bg-dark border-secondary text-white" v-model="moveLocation">
+                        <option value="">Sélectionner une localisation</option>
+                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                            [[ loc.name ]]
+                        </option>
+                    </select>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showMoveModal = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="bulkMove">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/assets.js' %}"></script>
+{% endblock %}

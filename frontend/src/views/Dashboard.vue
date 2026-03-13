@@ -184,31 +184,65 @@
           </div>
         </div>
 
-        <div class="col-lg-4">
-          <div class="card card-custom">
-            <div class="card-header">
-              <h5 class="card-title mb-0">Alertes</h5>
-            </div>
-            <div class="card-body">
-              <div v-if="alerts.length === 0" class="text-center py-4">
-                <i class="bi bi-check-circle display-1 text-success mb-3"></i>
-                <p class="text-muted">Aucune alerte</p>
+        <!-- Maintenance Tickets -->
+        <div class="row g-4 mt-4">
+          <div class="col-lg-12">
+            <div class="card card-custom">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Tickets de Maintenance</h5>
               </div>
-              <div v-else>
-                <div 
-                  v-for="alert in alerts" 
-                  :key="alert.id"
-                  class="alert alert-warning alert-dismissible fade show"
-                  role="alert"
-                >
-                  <i class="bi bi-exclamation-triangle me-2"></i>
-                  <strong>{{ alert.title }}</strong>
-                  <div class="small">{{ alert.message }}</div>
-                  <button 
-                    type="button" 
-                    class="btn-close" 
-                    @click="dismissAlert(alert.id)"
-                  ></button>
+              <div class="card-body">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="ticket in maintenanceTickets" :key="ticket.id">
+                      <td>{{ ticket.id }}</td>
+                      <td>{{ ticket.description }}</td>
+                      <td>{{ ticket.status }}</td>
+                      <td>{{ formatDate(ticket.date) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity & Alerts -->
+        <div class="row g-4 mt-4">
+          <div class="col-lg-4">
+            <div class="card card-custom">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Alertes</h5>
+              </div>
+              <div class="card-body">
+                <div v-if="alerts.length === 0" class="text-center py-4">
+                  <i class="bi bi-check-circle display-1 text-success mb-3"></i>
+                  <p class="text-muted">Aucune alerte</p>
+                </div>
+                <div v-else>
+                  <div 
+                    v-for="alert in alerts" 
+                    :key="alert.id"
+                    class="alert alert-warning alert-dismissible fade show"
+                    role="alert"
+                  >
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>{{ alert.title }}</strong>
+                    <div class="small">{{ alert.message }}</div>
+                    <button 
+                      type="button" 
+                      class="btn-close" 
+                      @click="dismissAlert(alert.id)"
+                    ></button>
+                  </div>
                 </div>
               </div>
             </div>

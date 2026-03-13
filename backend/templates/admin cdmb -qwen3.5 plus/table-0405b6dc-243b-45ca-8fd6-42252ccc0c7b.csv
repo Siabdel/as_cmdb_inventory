@@ -1,0 +1,6 @@
+﻿Fichier,Description
+scanner.css,"Styles caméra, overlay scan, result card, public page"
+index.html,"Interface scan avec ZXing, historique, actions rapides"
+scan_result.html,Page publique sans auth pour /scan/<uuid>/
+scanner.js,App Vue + ZXing integration + gestion caméra
+views.py,Vue Django publique (rappel backend)

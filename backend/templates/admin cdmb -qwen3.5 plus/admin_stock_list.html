@@ -1,0 +1,437 @@
+<!-- templates/admin/stock/list.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Stock Atelier - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/stock.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="stock-app">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">📦 Stock Atelier</h2>
+            <p class="text-muted mb-0">[[ totalItems ]] articles • [[ totalValue | currency ]] de valeur</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-light" @click="exportStock">
+                📥 Export CSV
+            </button>
+            <button class="btn btn-primary" @click="showAddItemModal = true" style="background: #2563eb; border:none;">
+                ➕ Nouvel Article
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Banner -->
+    <div class="stock-alert-banner" v-if="criticalStockCount > 0">
+        <span class="stock-alert-icon">⚠️</span>
+        <div class="stock-alert-content">
+            <h5 class="text-danger">[[ criticalStockCount ]] article(s) en rupture de stock</h5>
+            <p>Commandez immédiatement pour éviter les retards de maintenance</p>
+        </div>
+        <button class="btn btn-danger btn-sm" @click="filterByStockLevel('critical')">
+            Voir les ruptures
+        </button>
+    </div>
+
+    <div class="stock-alert-banner warning" v-if="lowStockCount > 0 && criticalStockCount === 0">
+        <span class="stock-alert-icon">🟠</span>
+        <div class="stock-alert-content">
+            <h5 class="text-warning">[[ lowStockCount ]] article(s) sous le seuil minimum</h5>
+            <p>Pensez à commander avant rupture</p>
+        </div>
+        <button class="btn btn-warning btn-sm" @click="filterByStockLevel('low')">
+            Voir les alertes
+        </button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon blue">📦</div>
+                <div>
+                    <div class="kpi-value">[[ totalItems ]]</div>
+                    <div class="kpi-label">Total Articles</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon green">✅</div>
+                <div>
+                    <div class="kpi-value">[[ okStockCount ]]</div>
+                    <div class="kpi-label">Stock OK</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon amber">⚠️</div>
+                <div>
+                    <div class="kpi-value">[[ lowStockCount ]]</div>
+                    <div class="kpi-label">Stock Critique</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon red">🔴</div>
+                <div>
+                    <div class="kpi-value">[[ criticalStockCount ]]</div>
+                    <div class="kpi-label">Rupture</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-stock-actions">
+        <h6>⚡ Actions Rapides</h6>
+        <div class="action-button-grid">
+            <div class="action-button" @click="showEntryModal = true">
+                <i class="text-success">📥</i>
+                <div>
+                    <div class="fw-bold">Entrée de Stock</div>
+                    <small class="text-muted">Ajouter des articles</small>
+                </div>
+            </div>
+            <div class="action-button" @click="showExitModal = true">
+                <i class="text-danger">📤</i>
+                <div>
+                    <div class="fw-bold">Sortie de Stock</div>
+                    <small class="text-muted">Lier à un ticket</small>
+                </div>
+            </div>
+            <div class="action-button" @click="showInventoryModal = true">
+                <i class="text-primary">📋</i>
+                <div>
+                    <div class="fw-bold">Inventaire</div>
+                    <small class="text-muted">Ajustement manuel</small>
+                </div>
+            </div>
+            <a href="/admin/stock/movements/" class="action-button">
+                <i class="text-info">📜</i>
+                <div>
+                    <div class="fw-bold">Historique</div>
+                    <small class="text-muted">Tous les mouvements</small>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card-cmdb p-3 mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control bg-dark border-secondary text-white"
+                       placeholder="Rechercher (réf, nom...)" v-model="filters.search" @input="debounceSearch">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.category">
+                    <option value="">Toutes catégories</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                        [[ cat.name ]]
+                    </option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.stockLevel">
+                    <option value="">Tous niveaux</option>
+                    <option value="ok">🟢 OK</option>
+                    <option value="low">🟠 Critique</option>
+                    <option value="critical">🔴 Rupture</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select bg-dark border-secondary text-white" v-model="filters.type">
+                    <option value="">Tous types</option>
+                    <option value="component">Composant</option>
+                    <option value="accessory">Accessoire</option>
+                    <option value="consumable">Consommable</option>
+                    <option value="tool">Outillage</option>
+                </select>
+            </div>
+            <div class="col-md-3 text-end">
+                <button class="btn btn-outline-secondary" @click="resetFilters">🔄 Reset</button>
+            </div>
+        </div>
+
+        <!-- Category Chips -->
+        <div class="category-chips mt-3" v-if="categories.length > 0">
+            <span class="category-chip" :class="{ active: filters.category === '' }" @click="filters.category = ''">
+                Tous
+            </span>
+            <span class="category-chip" 
+                  v-for="cat in categories" 
+                  :key="cat.id"
+                  :class="{ active: filters.category === cat.id }"
+                  @click="filters.category = cat.id">
+                [[ cat.name ]]
+            </span>
+        </div>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="stock-table">
+        <table class="table table-dark table-hover mb-0">
+            <thead>
+                <tr>
+                    <th width="50">
+                        <input type="checkbox" class="form-check-input" @change="toggleSelectAll" :checked="selectAll">
+                    </th>
+                    <th @click="sortBy('reference')">Référence [[ sortOrder.reference ]]</th>
+                    <th @click="sortBy('name')">Nom [[ sortOrder.name ]]</th>
+                    <th>Catégorie</th>
+                    <th>Type</th>
+                    <th @click="sortBy('quantity')">Stock [[ sortOrder.quantity ]]</th>
+                    <th>Seuil Min</th>
+                    <th>Prix Unit.</th>
+                    <th>Valeur Totale</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in filteredItems" :key="item.id" 
+                    :class="{ 'row-low-stock': isLowStock(item) }">
+                    <td data-label="Select">
+                        <input type="checkbox" class="form-check-input" 
+                               v-model="selectedItems" :value="item.id">
+                    </td>
+                    <td data-label="Référence">
+                        <code class="text-accent">[[ item.reference ]]</code>
+                    </td>
+                    <td data-label="Nom">
+                        <div class="d-flex align-items-center">
+                            <img :src="item.photo || '/static/admin_cmdb/img/no-image.png'" 
+                                 class="item-thumb me-2" alt="[[ item.name ]]">
+                            <div>
+                                <div class="fw-bold">[[ item.name ]]</div>
+                                <small class="text-muted" v-if="item.manufacturer">[[ item.manufacturer ]]</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td data-label="Catégorie">
+                        <span class="badge bg-secondary">[[ item.category_name || '-' ]]</span>
+                    </td>
+                    <td data-label="Type">
+                        <span class="badge bg-info">[[ getTypeLabel(item.type) ]]</span>
+                    </td>
+                    <td data-label="Stock">
+                        <span class="stock-badge" :class="getStockLevelClass(item)">
+                            <span class="stock-indicator"></span>
+                            [[ item.quantity ]]
+                        </span>
+                    </td>
+                    <td data-label="Seuil Min">[[ item.min_stock ]]</td>
+                    <td data-label="Prix Unit.">[[ formatCurrency(item.unit_price) ]]</td>
+                    <td data-label="Valeur Totale">
+                        <div>[[ formatCurrency(item.total_value) ]]</div>
+                        <div class="stock-value-bar">
+                            <div class="stock-value-fill" :style="{ width: getStockValuePercent(item) + '%' }"></div>
+                        </div>
+                    </td>
+                    <td data-label="Actions">
+                        <div class="btn-group btn-group-sm">
+                            <a :href="'/admin/stock/' + item.id + '/'" class="btn btn-outline-light">
+                                👁️
+                            </a>
+                            <button class="btn btn-outline-success" @click="openEntryModal(item)" title="Entrée">
+                                📥
+                            </button>
+                            <button class="btn btn-outline-danger" @click="openExitModal(item)" title="Sortie">
+                                📤
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr v-if="filteredItems.length === 0">
+                    <td colspan="10" class="text-center py-5 text-muted">
+                        Aucun article trouvé
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="text-muted">Page [[ currentPage ]] sur [[ totalPages ]] • [[ filteredItems.length ]] articles</span>
+        <nav>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                    <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Précédent</a>
+                </li>
+                <li class="page-item" v-for="page in visiblePages" :key="page" 
+                    :class="{ active: page === currentPage }">
+                    <a class="page-link" href="#" @click.prevent="changePage(page)">[[ page ]]</a>
+                </li>
+                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                    <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Suivant</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Entry Modal -->
+    <div class="modal fade" id="entryModal" tabindex="-1" v-show="showEntryModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stock-modal-content">
+                <div class="modal-header stock-modal-header border-secondary">
+                    <h5 class="modal-title">📥 Entrée de Stock</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showEntryModal = false"></button>
+                </div>
+                <div class="modal-body stock-modal-body">
+                    <div class="mb-3" v-if="entryItem">
+                        <label class="form-label text-muted">Article</label>
+                        <input type="text" class="form-control bg-dark border-secondary text-white" 
+                               :value="entryItem.name" readonly>
+                    </div>
+                    <div class="mb-3" v-else>
+                        <label class="form-label text-muted">Article</label>
+                        <select class="form-select bg-dark border-secondary text-white" v-model="entryItemId">
+                            <option value="">Sélectionner un article</option>
+                            <option v-for="item in items" :key="item.id" :value="item.id">
+                                [[ item.name ]] ([[ item.reference ]])
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Quantité</label>
+                        <input type="number" class="form-control bg-dark border-secondary text-white" 
+                               v-model="entryQuantity" min="1" placeholder="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Commentaire (optionnel)</label>
+                        <textarea class="form-control bg-dark border-secondary text-white" 
+                                  v-model="entryComment" rows="2" placeholder="Référence commande, fournisseur..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer stock-modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showEntryModal = false">Annuler</button>
+                    <button type="button" class="btn btn-success" @click="submitEntry">Confirmer Entrée</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exit Modal -->
+    <div class="modal fade" id="exitModal" tabindex="-1" v-show="showExitModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stock-modal-content">
+                <div class="modal-header stock-modal-header border-secondary">
+                    <h5 class="modal-title">📤 Sortie de Stock</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showExitModal = false"></button>
+                </div>
+                <div class="modal-body stock-modal-body">
+                    <div class="mb-3" v-if="exitItem">
+                        <label class="form-label text-muted">Article</label>
+                        <input type="text" class="form-control bg-dark border-secondary text-white" 
+                               :value="exitItem.name" readonly>
+                    </div>
+                    <div class="mb-3" v-else>
+                        <label class="form-label text-muted">Article</label>
+                        <select class="form-select bg-dark border-secondary text-white" v-model="exitItemId">
+                            <option value="">Sélectionner un article</option>
+                            <option v-for="item in items" :key="item.id" :value="item.id">
+                                [[ item.name ]] (Stock: [[ item.quantity ]])
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Quantité</label>
+                        <input type="number" class="form-control bg-dark border-secondary text-white" 
+                               v-model="exitQuantity" min="1" :max="exitItem ? exitItem.quantity : 999" placeholder="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Lier à un ticket (optionnel)</label>
+                        <select class="form-select bg-dark border-secondary text-white" v-model="exitTicketId">
+                            <option value="">Aucun ticket</option>
+                            <option v-for="ticket in openTickets" :key="ticket.id" :value="ticket.id">
+                                #[[ ticket.id ]] - [[ ticket.subject ]]
+                            </option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Commentaire</label>
+                        <textarea class="form-control bg-dark border-secondary text-white" 
+                                  v-model="exitComment" rows="2" placeholder="Raison de la sortie..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer stock-modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showExitModal = false">Annuler</button>
+                    <button type="button" class="btn btn-danger" @click="submitExit">Confirmer Sortie</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" v-show="showAddItemModal">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content stock-modal-content">
+                <div class="modal-header stock-modal-header border-secondary">
+                    <h5 class="modal-title">➕ Nouvel Article</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showAddItemModal = false"></button>
+                </div>
+                <div class="modal-body stock-modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Référence *</label>
+                            <input type="text" class="form-control bg-dark border-secondary text-white" 
+                                   v-model="newItem.reference" placeholder="REF-001">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Nom *</label>
+                            <input type="text" class="form-control bg-dark border-secondary text-white" 
+                                   v-model="newItem.name" placeholder="Nom de l'article">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Catégorie</label>
+                            <select class="form-select bg-dark border-secondary text-white" v-model="newItem.category">
+                                <option value="">Sélectionner</option>
+                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">[[ cat.name ]]</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Type</label>
+                            <select class="form-select bg-dark border-secondary text-white" v-model="newItem.type">
+                                <option value="component">Composant</option>
+                                <option value="accessory">Accessoire</option>
+                                <option value="consumable">Consommable</option>
+                                <option value="tool">Outillage</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Stock Initial</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white" 
+                                   v-model="newItem.quantity" min="0" value="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Seuil Minimum</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white" 
+                                   v-model="newItem.min_stock" min="1" value="5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted">Prix Unit. (€)</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white" 
+                                   v-model="newItem.unit_price" min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer stock-modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showAddItemModal = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="submitNewItem">Créer l'Article</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/stock.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,196 @@
+<!-- templates/admin/assets/detail.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}{{ asset.name }} - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/assets.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="asset-detail-app" data-asset-id="{{ asset.id }}">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/assets/" class="text-decoration-none text-muted">Assets</a></li>
+            <li class="breadcrumb-item active text-white" aria-current="page">{{ asset.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div class="d-flex align-items-center">
+            <img :src="asset.photo || '/static/admin_cmdb/img/no-image.png'" 
+                 class="asset-thumb me-3" style="width: 80px; height: 80px;" alt="{{ asset.name }}">
+            <div>
+                <h2 class="mb-1">[[ asset.name ]]</h2>
+                <p class="text-muted mb-0">S/N: [[ asset.serial_number ]] • [[ asset.category_name ]]</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-warning" @click="retireAsset">📦 Archiver</button>
+            <a :href="'/admin/assets/' + assetId + '/edit/'" class="btn btn-primary" style="background: #2563eb; border:none;">✏️ Éditer</a>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="mb-4">
+        <span class="status-badge" :class="getStatusClass(asset.status)">[[ asset.status ]]</span>
+        <span class="ms-2 text-muted" v-if="asset.warranty_end">
+            📅 Garantie jusqu'au [[ formatDate(asset.warranty_end) ]]
+        </span>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav detail-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'info' }" 
+               @click.prevent="activeTab = 'info'" href="#">📋 Infos</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'movements' }" 
+               @click.prevent="activeTab = 'movements'" href="#">📍 Mouvements</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'tickets' }" 
+               @click.prevent="activeTab = 'tickets'" href="#">🔧 Tickets</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="{ active: activeTab === 'qr' }" 
+               @click.prevent="activeTab = 'qr'" href="#">📱 QR Code</a>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="detail-tab-content">
+        <!-- Info Tab -->
+        <div v-if="activeTab === 'info'">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-3">Informations Générales</h6>
+                    <table class="table table-dark table-borderless">
+                        <tr><td class="text-muted">Nom</td><td>[[ asset.name ]]</td></tr>
+                        <tr><td class="text-muted">Modèle</td><td>[[ asset.model || '-' ]]</td></tr>
+                        <tr><td class="text-muted">Numéro de Série</td><td>[[ asset.serial_number ]]</td></tr>
+                        <tr><td class="text-muted">Catégorie</td><td>[[ asset.category_name ]]</td></tr>
+                        <tr><td class="text-muted">Marque</td><td>[[ asset.brand_name ]]</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-muted mb-3">Localisation & Assignment</h6>
+                    <table class="table table-dark table-borderless">
+                        <tr><td class="text-muted">Localisation</td><td>[[ asset.location_name || '-' ]]</td></tr>
+                        <tr><td class="text-muted">Assigné à</td><td>[[ asset.assigned_to || 'Non assigné' ]]</td></tr>
+                        <tr><td class="text-muted">Statut</td><td>[[ asset.status ]]</td></tr>
+                        <tr><td class="text-muted">Date d'achat</td><td>[[ formatDate(asset.purchase_date) ]]</td></tr>
+                        <tr><td class="text-muted">Fin de garantie</td><td>[[ formatDate(asset.warranty_end) ]]</td></tr>
+                    </table>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h6 class="text-muted mb-2">Tags</h6>
+                <span v-for="tag in asset.tags" :key="tag.id" class="badge bg-secondary me-1">[[ tag.name ]]</span>
+                <span v-if="!asset.tags || asset.tags.length === 0" class="text-muted">Aucun tag</span>
+            </div>
+        </div>
+
+        <!-- Movements Tab -->
+        <div v-if="activeTab === 'movements'">
+            <h6 class="text-muted mb-3">Historique des Mouvements</h6>
+            <div v-if="movements.length > 0">
+                <table class="table table-dark table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>De</th>
+                            <th>Vers</th>
+                            <th>Type</th>
+                            <th>Par</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="move in movements" :key="move.id">
+                            <td>[[ formatDate(move.created_at) ]]</td>
+                            <td>[[ move.from_location || '-' ]]</td>
+                            <td>[[ move.to_location ]]</td>
+                            <td><span class="badge bg-info">[[ move.movement_type ]]</span></td>
+                            <td>[[ move.created_by ]]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p v-else class="text-muted">Aucun mouvement enregistré</p>
+        </div>
+
+        <!-- Tickets Tab -->
+        <div v-if="activeTab === 'tickets'">
+            <h6 class="text-muted mb-3">Tickets de Maintenance Liés</h6>
+            <div v-if="tickets.length > 0">
+                <table class="table table-dark table-borderless">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Sujet</th>
+                            <th>Statut</th>
+                            <th>Priorité</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="ticket in tickets" :key="ticket.id">
+                            <td>#[[ ticket.id ]]</td>
+                            <td><a :href="'/admin/tickets/' + ticket.id + '/'" class="text-white">[[ ticket.subject ]]</a></td>
+                            <td><span class="badge" :class="getTicketStatusClass(ticket.status)">[[ ticket.status ]]</span></td>
+                            <td>[[ ticket.priority ]]</td>
+                            <td>[[ formatDate(ticket.created_at) ]]</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div v-else class="text-muted">Aucun ticket lié</div>
+            <button class="btn btn-outline-primary mt-3" @click="createTicket">➕ Créer un ticket</button>
+        </div>
+
+        <!-- QR Code Tab -->
+        <div v-if="activeTab === 'qr'">
+            <div class="qr-section">
+                <img :src="qrCodeUrl" class="qr-image mb-4" alt="QR Code">
+                <div class="d-flex justify-content-center gap-2">
+                    <a :href="qrCodeUrl" download="qr_asset_[[ asset.id ]].png" class="btn btn-primary">
+                        📥 Télécharger
+                    </a>
+                    <button class="btn btn-outline-light" @click="printQR">
+                        🖨️ Imprimer
+                    </button>
+                    <button class="btn btn-outline-warning" @click="regenerateQR">
+                        🔄 Régénérer
+                    </button>
+                </div>
+                <p class="text-muted mt-3 small">URL: [[ qrCodeUrl ]]</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pass Django context to Vue
+    window.assetInitialData = {
+        id: {{ asset.id }},
+        name: "{{ asset.name }}",
+        serial_number: "{{ asset.serial_number }}",
+        status: "{{ asset.status }}",
+        category_name: "{{ asset.category.name }}",
+        brand_name: "{{ asset.brand.name }}",
+        location_name: "{{ asset.location.name if asset.location else '' }}",
+        assigned_to: "{{ asset.assigned_to.username if asset.assigned_to else '' }}",
+        photo: "{{ asset.photo.url if asset.photo else '' }}",
+        warranty_end: "{{ asset.warranty_end|date:'Y-m-d' if asset.warranty_end else '' }}",
+        purchase_date: "{{ asset.purchase_date|date:'Y-m-d' if asset.purchase_date else '' }}",
+        tags: {{ asset.tags|length }} > 0 ? [{% for tag in asset.tags.all %}{id: {{ tag.id }}, name: "{{ tag.name }}"}{% if not forloop.last %},{% endif %}{% endfor %}] : []
+    };
+</script>
+<script src="{% static 'admin_cmdb/js/assets.js' %}"></script>
+{% endblock %}

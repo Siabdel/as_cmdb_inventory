@@ -6,8 +6,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from inventory.views import DashboardView
 
 urlpatterns = [
+    path('',         DashboardView.as_view(), name='dashboard'),  # ← accueil
     # Interface d'administration Django
     path('admin/', admin.site.urls),
     

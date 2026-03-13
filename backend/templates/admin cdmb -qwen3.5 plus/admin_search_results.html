@@ -1,0 +1,225 @@
+<!-- templates/admin/search/results.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Recherche: {{ query }} - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/search.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="search-app" class="search-page" data-initial-query="{{ query }}">
+    <!-- Header -->
+    <div class="search-page-header">
+        <h2 class="mb-3">🔍 Recherche</h2>
+        <div class="input-group input-group-lg">
+            <span class="input-group-text bg-dark border-secondary text-muted">🔍</span>
+            <input type="text" class="form-control search-page-input bg-dark border-secondary text-white"
+                   id="search-input" placeholder="Rechercher dans assets, tickets, stock..."
+                   value="{{ query }}" @keyup.enter="performSearch">
+            <button class="btn btn-primary" @click="performSearch" style="background: #2563eb; border:none;">
+                Rechercher
+            </button>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="search-quick-actions">
+            <a href="/admin/scanner/" class="search-quick-action">
+                📷 Scanner QR
+            </a>
+            <a href="/admin/assets/new/" class="search-quick-action">
+                ➕ Nouvel Asset
+            </a>
+            <a href="/admin/tickets/new/" class="search-quick-action">
+                🔧 Nouveau Ticket
+            </a>
+            <a href="/admin/stock/movement/" class="search-quick-action">
+                📦 Mouvement Stock
+            </a>
+        </div>
+    </div>
+
+    <!-- Result Type Tabs -->
+    <div class="search-tabs">
+        <a href="#" class="search-tab" :class="{ active: activeTab === 'all' }" @click.prevent="activeTab = 'all'">
+            📊 Tous <span class="badge">[[ totalCount ]]</span>
+        </a>
+        <a href="#" class="search-tab" :class="{ active: activeTab === 'assets' }" @click.prevent="activeTab = 'assets'">
+            💻 Assets <span class="badge">[[ assets.length ]]</span>
+        </a>
+        <a href="#" class="search-tab" :class="{ active: activeTab === 'tickets' }" @click.prevent="activeTab = 'tickets'">
+            🔧 Tickets <span class="badge">[[ tickets.length ]]</span>
+        </a>
+        <a href="#" class="search-tab" :class="{ active: activeTab === 'stock' }" @click.prevent="activeTab = 'stock'">
+            📦 Stock <span class="badge">[[ stock.length ]]</span>
+        </a>
+    </div>
+
+    <!-- Loading State -->
+    <div class="search-loading" v-if="loading">
+        <div class="search-spinner"></div>
+        <p class="text-muted">Recherche en cours...</p>
+    </div>
+
+    <!-- No Results -->
+    <div class="search-no-results" v-else-if="!loading && totalCount === 0 && query">
+        <i>🔍</i>
+        <h4>Aucun résultat pour "[[ query ]]"</h4>
+        <p>Essayez avec d'autres termes ou vérifiez l'orthographe</p>
+        <div class="search-quick-actions justify-content-center">
+            <a href="/admin/assets/" class="search-quick-action">Voir tous les assets</a>
+            <a href="/admin/tickets/" class="search-quick-action">Voir tous les tickets</a>
+            <a href="/admin/stock/" class="search-quick-action">Voir tout le stock</a>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div v-else>
+        <!-- All Results -->
+        <div v-if="activeTab === 'all'">
+            <!-- Assets -->
+            <div class="search-card" v-if="assets.length > 0">
+                <div class="search-card-header">
+                    <h5>💻 Assets <span class="badge bg-primary">[[ assets.length ]]</span></h5>
+                    <a href="/admin/assets/" class="btn btn-sm btn-outline-light">Voir tout</a>
+                </div>
+                <div class="search-card-body">
+                    <a :href="'/admin/assets/' + asset.id + '/'" class="search-card-item" v-for="asset in assets" :key="asset.id">
+                        <div class="search-card-item-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;">
+                            💻
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(asset.name)"></div>
+                            <div class="search-card-item-meta">
+                                S/N: [[ asset.serial_number ]] • [[ asset.category_name ]] • [[ asset.status ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="status-badge" :class="getStatusClass(asset.status)">[[ asset.status ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Tickets -->
+            <div class="search-card" v-if="tickets.length > 0">
+                <div class="search-card-header">
+                    <h5>🔧 Tickets <span class="badge bg-purple">[[ tickets.length ]]</span></h5>
+                    <a href="/admin/tickets/" class="btn btn-sm btn-outline-light">Voir tout</a>
+                </div>
+                <div class="search-card-body">
+                    <a :href="'/admin/tickets/' + ticket.id + '/'" class="search-card-item" v-for="ticket in tickets" :key="ticket.id">
+                        <div class="search-card-item-icon" style="background: rgba(168, 85, 247, 0.2); color: #a855f7;">
+                            🔧
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(ticket.subject)"></div>
+                            <div class="search-card-item-meta">
+                                #[[ ticket.id ]] • [[ ticket.status ]] • [[ ticket.priority ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="badge" :class="getPriorityClass(ticket.priority)">[[ ticket.priority ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stock -->
+            <div class="search-card" v-if="stock.length > 0">
+                <div class="search-card-header">
+                    <h5>📦 Stock <span class="badge bg-success">[[ stock.length ]]</span></h5>
+                    <a href="/admin/stock/" class="btn btn-sm btn-outline-light">Voir tout</a>
+                </div>
+                <div class="search-card-body">
+                    <a :href="'/admin/stock/' + item.id + '/'" class="search-card-item" v-for="item in stock" :key="item.id">
+                        <div class="search-card-item-icon" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+                            📦
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(item.name)"></div>
+                            <div class="search-card-item-meta">
+                                [[ item.reference ]] • Stock: [[ item.quantity ]] • [[ formatCurrency(item.unit_price) ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="stock-badge" :class="getStockLevelClass(item)">[[ item.quantity ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets Only -->
+        <div v-if="activeTab === 'assets'">
+            <div class="search-card" v-if="assets.length > 0">
+                <div class="search-card-body">
+                    <a :href="'/admin/assets/' + asset.id + '/'" class="search-card-item" v-for="asset in assets" :key="asset.id">
+                        <div class="search-card-item-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;">
+                            💻
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(asset.name)"></div>
+                            <div class="search-card-item-meta">
+                                S/N: [[ asset.serial_number ]] • [[ asset.category_name ]] • [[ asset.location_name || 'Non localisé' ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="status-badge" :class="getStatusClass(asset.status)">[[ asset.status ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tickets Only -->
+        <div v-if="activeTab === 'tickets'">
+            <div class="search-card" v-if="tickets.length > 0">
+                <div class="search-card-body">
+                    <a :href="'/admin/tickets/' + ticket.id + '/'" class="search-card-item" v-for="ticket in tickets" :key="ticket.id">
+                        <div class="search-card-item-icon" style="background: rgba(168, 85, 247, 0.2); color: #a855f7;">
+                            🔧
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(ticket.subject)"></div>
+                            <div class="search-card-item-meta">
+                                #[[ ticket.id ]] • [[ ticket.status ]] • [[ ticket.assignee || 'Non assigné' ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="badge" :class="getPriorityClass(ticket.priority)">[[ ticket.priority ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Only -->
+        <div v-if="activeTab === 'stock'">
+            <div class="search-card" v-if="stock.length > 0">
+                <div class="search-card-body">
+                    <a :href="'/admin/stock/' + item.id + '/'" class="search-card-item" v-for="item in stock" :key="item.id">
+                        <div class="search-card-item-icon" style="background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+                            📦
+                        </div>
+                        <div class="search-card-item-content">
+                            <div class="search-card-item-title" v-html="highlightText(item.name)"></div>
+                            <div class="search-card-item-meta">
+                                [[ item.reference ]] • Stock: [[ item.quantity ]] / [[ item.min_stock ]]
+                            </div>
+                        </div>
+                        <div class="search-card-item-actions">
+                            <span class="stock-badge" :class="getStockLevelClass(item)">[[ item.quantity ]]</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/search.js' %}"></script>
+{% endblock %}

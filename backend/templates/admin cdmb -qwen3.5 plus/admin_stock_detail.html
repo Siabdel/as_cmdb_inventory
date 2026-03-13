@@ -1,0 +1,213 @@
+<!-- templates/admin/stock/detail.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}{{ item.name }} - Stock{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/stock.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="stock-detail-app" data-item-id="{{ item.id }}">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/stock/" class="text-decoration-none text-muted">Stock</a></li>
+            <li class="breadcrumb-item active text-white" aria-current="page">{{ item.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div class="d-flex align-items-center">
+            <img :src="item.photo || '/static/admin_cmdb/img/no-image.png'" 
+                 class="item-thumb me-3" style="width: 80px; height: 80px;" alt="{{ item.name }}">
+            <div>
+                <h2 class="mb-1">[[ item.name ]]</h2>
+                <p class="text-muted mb-0">
+                    <code class="text-accent">[[ item.reference ]]</code>
+                    <span class="ms-3">📦 [[ item.category_name || '-' ]]</span>
+                </p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-success" @click="showEntryModal = true">📥 Entrée</button>
+            <button class="btn btn-outline-danger" @click="showExitModal = true">📤 Sortie</button>
+            <a :href="'/admin/stock/' + itemId + '/edit/'" class="btn btn-primary" style="background: #2563eb; border:none;">✏️ Éditer</a>
+        </div>
+    </div>
+
+    <!-- Stock Level Alert -->
+    <div class="stock-alert-banner" v-if="isCritical">
+        <span class="stock-alert-icon">🔴</span>
+        <div class="stock-alert-content">
+            <h5 class="text-danger">Rupture de stock !</h5>
+            <p>Stock actuel: [[ item.quantity ]] / Seuil minimum: [[ item.min_stock ]]</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Info -->
+        <div class="col-lg-8">
+            <!-- Item Details -->
+            <div class="ticket-section">
+                <h6>📋 Informations Article</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-dark table-borderless">
+                            <tr><td class="text-muted">Référence</td><td><code>[[ item.reference ]]</code></td></tr>
+                            <tr><td class="text-muted">Nom</td><td>[[ item.name ]]</td></tr>
+                            <tr><td class="text-muted">Catégorie</td><td>[[ item.category_name || '-' ]]</td></tr>
+                            <tr><td class="text-muted">Type</td><td>[[ getTypeLabel(item.type) ]]</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-dark table-borderless">
+                            <tr><td class="text-muted">Fabricant</td><td>[[ item.manufacturer || '-' ]]</td></tr>
+                            <tr><td class="text-muted">Prix Unit.</td><td>[[ formatCurrency(item.unit_price) ]]</td></tr>
+                            <tr><td class="text-muted">Valeur Totale</td><td>[[ formatCurrency(item.total_value) ]]</td></tr>
+                            <tr><td class="text-muted">Dernière MAJ</td><td>[[ formatDate(item.updated_at) ]]</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Movement Timeline -->
+            <div class="ticket-section">
+                <h6>
+                    📜 Historique des Mouvements
+                    <button class="btn btn-sm btn-outline-light" @click="exportMovements">📥 Export</button>
+                </h6>
+                <div class="movement-timeline" v-if="movements.length > 0">
+                    <div class="movement-item" 
+                         v-for="move in movements" 
+                         :key="move.id"
+                         :class="move.movement_type">
+                        <div class="movement-item-content">
+                            <div class="movement-item-header">
+                                <span class="movement-type" :class="move.movement_type">
+                                    [[ getMovementTypeLabel(move.movement_type) ]]
+                                </span>
+                                <span class="text-muted small">[[ formatDate(move.created_at) ]]</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span :class="move.quantity > 0 ? 'text-success' : 'text-danger'" class="fw-bold">
+                                        [[ move.quantity > 0 ? '+' : '' ]] [[ move.quantity ]] unités
+                                    </span>
+                                    <span class="text-muted ms-2">
+                                        → Stock: [[ move.stock_after ]]
+                                    </span>
+                                </div>
+                                <div class="text-muted small">
+                                    Par: [[ move.created_by ]]
+                                </div>
+                            </div>
+                            <div v-if="move.comment" class="mt-2 text-muted small">
+                                💬 [[ move.comment ]]
+                            </div>
+                            <div v-if="move.ticket" class="mt-1">
+                                <a :href="'/admin/tickets/' + move.ticket + '/'" class="text-accent small">
+                                    🔗 Ticket #[[ move.ticket ]]
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p v-else class="text-muted">Aucun mouvement enregistré</p>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Stock Level Card -->
+            <div class="kpi-card mb-3" :class="getStockLevelClass(item)">
+                <div class="kpi-icon" :class="getStockLevelIconClass(item)">📦</div>
+                <div>
+                    <div class="kpi-value">[[ item.quantity ]]</div>
+                    <div class="kpi-label">Unités en Stock</div>
+                </div>
+            </div>
+
+            <!-- Stock Gauge -->
+            <div class="ticket-section">
+                <h6>📊 Niveau de Stock</h6>
+                <div class="text-center py-3">
+                    <div class="mb-2">
+                        <span class="text-muted">Actuel: </span>
+                        <span class="fw-bold" :class="getStockLevelColorClass(item)">[[ item.quantity ]]</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Seuil min: </span>
+                        <span class="fw-bold">[[ item.min_stock ]]</span>
+                    </div>
+                    <div class="stock-value-bar" style="height: 16px;">
+                        <div class="stock-value-fill" 
+                             :style="{ 
+                                 width: getStockPercentage() + '%',
+                                 background: getStockLevelGradient()
+                             }"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        [[ getStockPercentage() ]]% au-dessus du seuil
+                    </small>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="ticket-section">
+                <h6>📈 Statistiques</h6>
+                <table class="table table-dark table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Entrées (30j)</td>
+                        <td class="text-success">+[[ stats.entries30d ]]</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Sorties (30j)</td>
+                        <td class="text-danger">-[[ stats.exits30d ]]</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Mouvements totaux</td>
+                        <td>[[ movements.length ]]</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Tickets liés</td>
+                        <td>[[ stats.ticketsLinked ]]</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Reorder Button -->
+            <div class="d-grid gap-2" v-if="isCritical || isLow">
+                <button class="btn btn-warning" @click="showReorderModal = true">
+                    🛒 Commander
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Entry/Exit Modals (same as list.html) -->
+    <!-- ... (reuse modals from list.html) ... -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.stockItemInitialData = {
+        id: {{ item.id }},
+        name: "{{ item.name }}",
+        reference: "{{ item.reference }}",
+        quantity: {{ item.quantity }},
+        min_stock: {{ item.min_stock }},
+        unit_price: {{ item.unit_price|default:0 }},
+        total_value: {{ item.total_value|default:0 }},
+        type: "{{ item.type }}",
+        category_name: "{{ item.category.name if item.category else '' }}",
+        manufacturer: "{{ item.manufacturer|default:'' }}",
+        photo: "{{ item.photo.url if item.photo else '' }}",
+        updated_at: "{{ item.updated_at|date:'Y-m-d' }}"
+    };
+</script>
+<script src="{% static 'admin_cmdb/js/stock.js' %}"></script>
+{% endblock %}

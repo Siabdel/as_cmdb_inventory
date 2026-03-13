@@ -1,0 +1,268 @@
+<!-- templates/admin/tickets/detail.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Ticket #{{ ticket.id }} - CMDB{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/tickets.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div id="ticket-detail-app" data-ticket-id="{{ ticket.id }}">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin/tickets/" class="text-decoration-none text-muted">Tickets</a></li>
+            <li class="breadcrumb-item active text-white" aria-current="page">Ticket #{{ ticket.id }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="ticket-detail-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <h2 class="mb-0">🔧 Ticket #[[ ticket.id ]]</h2>
+                    <span class="badge" :class="getPriorityClass(ticket.priority)">
+                        [[ getPriorityLabel(ticket.priority) ]]
+                    </span>
+                    <span class="status-badge" :class="getStatusClass(ticket.status)">
+                        [[ ticket.status ]]
+                    </span>
+                </div>
+                <h4 class="text-white mb-2">[[ ticket.subject ]]</h4>
+                <p class="text-muted mb-0">
+                    💻 [[ ticket.asset_name || 'Aucun asset lié' ]]
+                    {% if ticket.asset %}
+                    <a href="/admin/assets/{{ ticket.asset.id }}/" class="text-accent ms-2">Voir fiche →</a>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="text-end">
+                <div class="assignee-avatar mb-2" style="width: 48px; height: 48px; font-size: 1.2rem;">
+                    [[ getInitials(ticket.assignee || 'NA') ]]
+                </div>
+                <small class="text-muted">[[ ticket.assignee || 'Non assigné' ]]</small>
+            </div>
+        </div>
+
+        <!-- Workflow Buttons -->
+        <div class="ticket-workflow-bar">
+            <button v-for="transition in allowedTransitions" 
+                    :key="transition.to"
+                    class="btn btn-sm"
+                    :class="getTransitionButtonClass(transition.to)"
+                    @click="transitionTicket(transition.to)">
+                [[ getTransitionLabel(transition.to) ]]
+            </button>
+            <button class="btn btn-sm btn-outline-primary" @click="showAssignModal = true">
+                👤 Assigner
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Description -->
+            <div class="ticket-section">
+                <h6>📝 Description</h6>
+                <p class="text-white">[[ ticket.description ]]</p>
+            </div>
+
+            <!-- Comments -->
+            <div class="ticket-section">
+                <h6>
+                    💬 Commentaires
+                    <button class="btn btn-sm btn-primary" @click="showCommentModal = true">+ Ajouter</button>
+                </h6>
+                <div v-if="comments.length > 0">
+                    <div class="comment-item" v-for="comment in comments" :key="comment.id"
+                         :class="{ 'comment-internal': comment.is_internal }">
+                        <div class="comment-header">
+                            <span class="comment-author">[[ comment.author ]]</span>
+                            <span class="comment-date">[[ formatDate(comment.created_at) ]]</span>
+                        </div>
+                        <div class="comment-body">[[ comment.content ]]</div>
+                        <div v-if="comment.is_internal" class="small text-warning mt-1">
+                            🔒 Commentaire interne
+                        </div>
+                    </div>
+                </div>
+                <p v-else class="text-muted">Aucun commentaire</p>
+            </div>
+
+            <!-- Parts Consumed -->
+            <div class="ticket-section">
+                <h6>
+                    📦 Pièces Consommées
+                    <button class="btn btn-sm btn-primary" @click="showPartsModal = true">+ Ajouter</button>
+                </h6>
+                <table class="parts-table" v-if="parts.length > 0">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Nom</th>
+                            <th>Quantité</th>
+                            <th>Prix unit.</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="part in parts" :key="part.id">
+                            <td>[[ part.item_reference ]]</td>
+                            <td>[[ part.item_name ]]</td>
+                            <td>[[ part.quantity ]]</td>
+                            <td>[[ formatCurrency(part.unit_price) ]]</td>
+                            <td>[[ formatCurrency(part.total_price) ]]</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p v-else class="text-muted">Aucune pièce consommée</p>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Info Card -->
+            <div class="ticket-section">
+                <h6>📋 Informations</h6>
+                <table class="table table-dark table-borderless mb-0">
+                    <tr><td class="text-muted">Créé le</td><td>[[ formatDate(ticket.created_at) ]]</td></tr>
+                    <tr><td class="text-muted">Échéance</td><td :class="{ 'text-danger': isOverdue() }">[[ formatDate(ticket.due_date) ]]</td></tr>
+                    <tr><td class="text-muted">Temps passé</td><td>[[ ticket.hours_spent || 0 ]]h</td></tr>
+                    <tr><td class="text-muted">Coût main d'œuvre</td><td>[[ formatCurrency(laborCost) ]]</td></tr>
+                </table>
+            </div>
+
+            <!-- Cost Summary -->
+            <div class="cost-summary">
+                <h6 class="text-white mb-3">💰 Coût Total</h6>
+                <div class="cost-row">
+                    <span class="text-muted">Pièces</span>
+                    <span>[[ formatCurrency(partsCost) ]]</span>
+                </div>
+                <div class="cost-row">
+                    <span class="text-muted">Main d'œuvre</span>
+                    <span>[[ formatCurrency(laborCost) ]]</span>
+                </div>
+                <div class="cost-row">
+                    <span>Total</span>
+                    <span>[[ formatCurrency(totalCost) ]]</span>
+                </div>
+            </div>
+
+            <!-- Status History -->
+            <div class="ticket-section mt-3">
+                <h6>📜 Historique Statuts</h6>
+                <div v-if="statusHistory.length > 0">
+                    <div class="status-history-item" v-for="history in statusHistory" :key="history.id">
+                        <div>
+                            <div class="status-change">[[ history.from_status ]] → [[ history.to_status ]]</div>
+                            <div class="status-date">[[ formatDate(history.changed_at) ]] par [[ history.changed_by ]]</div>
+                        </div>
+                    </div>
+                </div>
+                <p v-else class="text-muted">Aucun historique</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Modal -->
+    <div class="modal fade" id="assignModal" tabindex="-1" v-show="showAssignModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">👤 Assigner le ticket</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showAssignModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select bg-dark border-secondary text-white" v-model="assignTo">
+                        <option value="">Sélectionner un technicien</option>
+                        <option v-for="tech in technicians" :key="tech.id" :value="tech.id">
+                            [[ tech.username ]]
+                        </option>
+                    </select>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showAssignModal = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="assignTicket">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comment Modal -->
+    <div class="modal fade" id="commentModal" tabindex="-1" v-show="showCommentModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">💬 Ajouter un commentaire</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showCommentModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea class="form-control bg-dark border-secondary text-white mb-3" 
+                              rows="4" 
+                              placeholder="Votre commentaire..."
+                              v-model="newComment"></textarea>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" v-model="commentInternal" id="internalCheck">
+                        <label class="form-check-label text-muted" for="internalCheck">
+                            Commentaire interne (non visible par le client)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showCommentModal = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="addComment">Publier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parts Modal -->
+    <div class="modal fade" id="partsModal" tabindex="-1" v-show="showPartsModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">📦 Ajouter une pièce</h5>
+                    <button type="button" class="btn-close btn-close-white" @click="showPartsModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <select class="form-select bg-dark border-secondary text-white mb-3" v-model="selectedPart">
+                        <option value="">Sélectionner une pièce</option>
+                        <option v-for="item in stockItems" :key="item.id" :value="item.id">
+                            [[ item.name ]] (Stock: [[ item.quantity ]])
+                        </option>
+                    </select>
+                    <input type="number" class="form-control bg-dark border-secondary text-white mb-3"
+                           placeholder="Quantité" v-model="partQuantity" min="1">
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="showPartsModal = false">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="addPart">Ajouter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.ticketInitialData = {
+        id: {{ ticket.id }},
+        subject: "{{ ticket.subject }}",
+        description: "{{ ticket.description }}",
+        status: "{{ ticket.status }}",
+        priority: "{{ ticket.priority }}",
+        assignee: "{{ ticket.assignee.username if ticket.assignee else '' }}",
+        asset_name: "{{ ticket.asset.name if ticket.asset else '' }}",
+        created_at: "{{ ticket.created_at|date:'Y-m-d' }}",
+        due_date: "{{ ticket.due_date|date:'Y-m-d' if ticket.due_date else '' }}",
+        hours_spent: {{ ticket.hours_spent|default:0 }}
+    };
+</script>
+<script src="{% static 'admin_cmdb/js/tickets.js' %}"></script>
+{% endblock %}
