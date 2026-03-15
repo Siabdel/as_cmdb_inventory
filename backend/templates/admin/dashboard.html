@@ -626,13 +626,13 @@
           </div>
         </div>
 
-        <div v-else v-for="cat in byCategory" :key="cat.category__name" class="col-6 col-md-4 col-lg-2">
+        <div v-else v-for="cat in byCategory" :key="cat.category__name || 'uncategorized'" class="col-6 col-md-4 col-lg-2">
           <div class="cat-card">
             <div class="cat-icon-wrap" :style="{background: getCatBg(cat.category__icon)}">
               <i :class="getCatIcon(cat.category__icon)"></i>
             </div>
             <div class="cat-count">{{ cat.count }}</div>
-            <div class="cat-name">{{ cat.category__name }}</div>
+            <div class="cat-name">{{ cat.category__name || 'Non catégorisé' }}</div>
           </div>
         </div>
       </div>
@@ -750,6 +750,7 @@ createApp({
                                || []
 
         this.lastUpdate = new Date().toLocaleTimeString('fr-FR')
+        console.log('Données chargées depuis l\'API', this.byCategory)
 
       } catch(e) {
         console.warn('API non disponible — mode démo', e.message)

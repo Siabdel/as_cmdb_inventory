@@ -744,7 +744,7 @@ createApp({
         ])
 
         this.stats           = statsRes.data
-        this.byCategory      = catRes.data
+        this.byCategory      = catRes.categories || []
         this.warrantyAssets  = warrantyRes.data
         this.recentMovements = this.stats.recent_movements
                                || movRes.data?.results
@@ -752,7 +752,7 @@ createApp({
                                || []
 
         this.lastUpdate = new Date().toLocaleTimeString('fr-FR')
-
+        console.log('Données chargées', { byCategory: this.byCategory} );
       } catch(e) {
         console.warn('API non disponible — mode démo', e.message)
         //this.loadDemoData()

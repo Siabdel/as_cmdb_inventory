@@ -147,7 +147,30 @@ class AssetViewSet(viewsets.ModelViewSet):
         data = Asset.objects.values(
             'category__name', 'category__icon'
         ).annotate(count=Count('id')).order_by('-count')
-        return Response({'categories': list(data)})
+        
+        # Transformer les données plates en objets structurés
+        structured_data = []
+        for item in data:
+            structured_data.append({
+                'category': {
+                    'name': item['category__name'],
+                    'icon': item['category__icon']
+                },
+                'count': item['count']
+            })
+        
+        # Ajouter les assets sans catégorie
+        uncategorized = Asset.objects.filter(category__isnull=True).count()
+        if uncategorized > 0:
+            structured_data.append({
+                'category': {
+                    'name': 'Non catégorisé',
+                    'icon': 'box'
+                },
+                'count': uncategorized
+            })
+            
+        return Response({'categories': structured_data})
     
     @action(detail=False, methods=['get'], url_path='by-location')
     def by_location(self, request):
@@ -287,3 +310,20 @@ def by_location(request):
         'current_location__name'
     ).annotate(count=Count('id')).order_by('-count')
     return Response(data)   
+
+def by_category(request):
+    """Vue fonctionnelle pour la répartition des assets par catégorie."""
+    data = Asset.objects.values(
+        'category__name'
+    ).annotate(count=Count('id')).order_by('-count')
+    
+    # Ajouter les assets sans catégorie
+    uncategorized = Asset.objects.filter(category__isnull=True).count()
+    if uncategorized > 0:
+        data = list(data)
+        data.append({
+            'category__name': 'Non catégorisé',
+            'count': uncategorized
+        })
+        
+    return Response(data)
