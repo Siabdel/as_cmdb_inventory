@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
 
@@ -10,6 +10,27 @@ from rest_framework import status
 
 from .models import QRCode, ScanLog
 from inventory.serializers import AssetDetailSerializer
+# scanner/views.py
+from inventory.models import Asset
+from maintenance.models import MaintenanceTicket as Ticket
+
+def public_scan_result(request, uuid):
+    """Page publique de résultat de scan - sans authentification"""
+    # Résoudre l'UUID vers l'asset
+    asset = get_object_or_404(Asset, qr_uuid=uuid)
+    
+    # Enregistrer le scan (optionnel, pour stats)
+    # ScanLog.objects.create(asset=asset, scanned_by='public', scanned_at=timezone.now())
+    
+    # Tickets ouverts liés
+    open_tickets = Ticket.objects.filter(asset=asset, status__in=['open', 'assigned', 'in_progress'])
+    
+    context = {
+        'asset': asset,
+        'open_tickets': open_tickets,
+        'scan_date': timezone.now()
+    }
+    return render(request, 'public/scan_result.html', context)
 
 
 @api_view(['GET'])
@@ -60,3 +81,23 @@ def regenerate_qr(request, asset_id):
         'url': qr_obj.url,
         'image': request.build_absolute_uri(qr_obj.image.url) if qr_obj.image else None,
     })
+
+# scanner/views.py
+
+def public_scan_result(request, uuid):
+    """Page publique de résultat de scan - sans authentification"""
+    # Résoudre l'UUID vers l'asset
+    asset = get_object_or_404(Asset, qr_uuid=uuid)
+    
+    # Enregistrer le scan (optionnel, pour stats)
+    # ScanLog.objects.create(asset=asset, scanned_by='public', scanned_at=timezone.now())
+    
+    # Tickets ouverts liés
+    open_tickets = Ticket.objects.filter(asset=asset, status__in=['open', 'assigned', 'in_progress'])
+    
+    context = {
+        'asset': asset,
+        'open_tickets': open_tickets,
+        'scan_date': timezone.now()
+    }
+    return render(request, 'public/scan_result.html', context)

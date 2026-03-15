@@ -177,4 +177,8 @@ class DashboardStatsSerializer(serializers.Serializer):
     assets_damaged    = serializers.IntegerField()
     total_value       = serializers.DecimalField(max_digits=12, decimal_places=2)
     low_warranty      = serializers.IntegerField()  # warranty < 30 jours
-    recent_movements  = AssetMovementSerializer(many=True)
+    recent_movements = serializers.SerializerMethodField()
+
+    def get_recent_movements(self, obj):
+        movements = AssetMovement.objects.order_by('-moved_at')[:5]
+        return AssetMovementSerializer(movements, many=True).data

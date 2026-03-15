@@ -7,22 +7,26 @@ from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from inventory.views import DashboardView
+from scanner.views import public_scan_result
+from django.views.generic import TemplateView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 urlpatterns = [
-    path('',         DashboardView.as_view(), name='dashboard'),  # ← accueil
+    path('', DashboardView.as_view(), name='dashboard'),  # ← accueil
     # Interface d'administration Django
-    path('admin/', admin.site.urls),
+    path('django-admin/', admin.site.urls),
+     # Administration CMDB (interface custom)
+    path('admin/', include('cmdb_admin.urls')),
     
     # API REST
+    ## API endpoints
+    path('api/v1/assets/', include('inventory.urls')),  # URLs admin custom
     path('api/v1/inventory/',  include('inventory.urls')),# URLs de l'app inventory (CRUD assets, catégories, etc.)
     path('api/v1/maintenance/', include('maintenance.urls')),
     path('api/v1/scanner/', include('scanner.urls')), # URLs spécifiques au scanner QR code
     path('api/v1/maintenance/', include('maintenance.urls')), # URLs spécifiques à la maintenance
     # config/urls.py
     path('api/v1/stock/', include('stock.urls')),
-
-
-    
     # Authentification DRF
     path('api-auth/', include('rest_framework.urls')),
 ]
@@ -34,7 +38,6 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     
     # DRF Spectacular - Documentation API OpenAPI 3
-    from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
     urlpatterns += [
         # Schema OpenAPI 3
         path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -42,7 +45,10 @@ if settings.DEBUG:
         path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
         # Redoc
         path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+        path('scan/<str:uuid>/', public_scan_result, name='public_scan'),  # Sans auth
     ]
+ 
+
 
     # config/urls.py
 

@@ -1,26 +1,22 @@
-"""
-Configuration des URLs pour l'API CMDB Inventory
-"""
-
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken.views import obtain_auth_token
-
-# Configuration du routeur DRF
-
-from . import api_views as views 
-
-router = DefaultRouter()
-router.register('categories',  views.CategoryViewSet,      basename='category')
-router.register('brands',      views.BrandViewSet,         basename='brand')
-router.register('locations',   views.LocationViewSet,      basename='location')
-router.register('tags',        views.TagViewSet,           basename='tag')
-router.register('assets',      views.AssetViewSet,         basename='asset')
-router.register('movements',   views.AssetMovementViewSet, basename='movement')
-router.register('dashboard',   views.DashboardViewSet,     basename='dashboard')
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
-    # Authentification par token
-    path('auth/token/', obtain_auth_token, name='api_token_auth'),
+    path('category/', views.CategoryViewSet.as_view({'get': 'list'})),
+    path('location/', views.LocationViewSet.as_view({'get': 'list'})),
+    path('brand/', views.BrandViewSet.as_view({'get': 'list'})),
+    path('dashboard/', views.DashboardViewSet.as_view({'get': 'list'})),
+    path('dashboard/stats/', views.DashboardStatsView.as_view({'get': 'list'}), name='dashboard-stats'),
+    path('assets/<int:pk>/movements/', views.AssetMovementsView.as_view({'get': 'list'}), name='asset-movements'),
+
+    path('assets/', views.AssetViewSet.as_view({'get': 'list'}), name='asset-list'),
+
+
+    path('assets/by-category/', views.AssetViewSet.as_view({'get': 'list'}), name='asset-by-category'),
+    path('assets/by-status/', views.AssetViewSet.as_view({'get': 'list'}), name='asset-by-status'),
+    path('assets/by-location/', views.AssetViewSet.as_view({'get': 'list'}), name='asset-by-location'),
+    path('assets/<int:pk>/move/', views.AssetViewSet.as_view({'post': 'move'}), name='asset-move'),
+
+    path('movements/', views.AssetMovementViewSet.as_view({'get': 'list'}), name='asset-movements'),
+    path('assets/warranty-expiring/', views.AssetViewSet.as_view({'get': 'list'}), name='warranty-expiring'),
 ]
