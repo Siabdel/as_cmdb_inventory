@@ -11,6 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework.views import APIView
 
 from .models import Category, Brand, Location, Tag, Asset, AssetMovement
 from .serializers import (
@@ -140,7 +141,7 @@ class AssetViewSet(viewsets.ModelViewSet):
         """Répartition des assets par statut (pour graphiques dashboard)."""
         data = Asset.objects.values('status').annotate(count=Count('id'))
         return Response(data)
-
+    
     @action(detail=False, methods=['get'], url_path='by-category')
     def by_category(self, request):
         """Répartition par catégorie."""
@@ -301,9 +302,29 @@ class AssetMovementsView(viewsets.ViewSet):
         return Response(data)
     
 
+# Vues fonctionnelles pour les graphiques du dashboard (exemples) #
+#--- Ces vues peuvent être utilisées pour alimenter des graphiques spécifiques sur le dashboard ---#
+class CurrentUserView(APIView):
+    """
+    Renvoie les informations de l'utilisateur connecté.
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        user = request.user
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+        }
+        return Response(data)
 
-
+## Vues fonctionnelles pour les graphiques du dashboard (exemples) ##
+##--- Ces vues peuvent être utilisées pour alimenter des graphiques spécifiques sur le dashboard ##---
 def by_location(request):
     """Vue fonctionnelle pour la répartition des assets par emplacement."""
     data = Asset.objects.values(

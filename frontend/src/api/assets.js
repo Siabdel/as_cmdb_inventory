@@ -9,7 +9,7 @@ export const assetsApi = {
    * Récupérer la liste des assets avec filtres et pagination
    */
   async getAssets(params = {}) {
-    const url = apiUtils.buildUrl('/assets/', params)
+    const url = apiUtils.buildUrl('/v1/assets/', params)
     return apiClient.get(url)
   },
 
@@ -17,7 +17,7 @@ export const assetsApi = {
    * Récupérer un asset par son ID
    */
   async getAsset(id) {
-    return apiClient.get(`/assets/${id}/`)
+    return apiClient.get(`/v1/assets/${id}/`)
   },
 
   /**
@@ -27,13 +27,13 @@ export const assetsApi = {
     // Si des fichiers sont présents, utiliser FormData
     if (data.qr_code_image instanceof File || data.image instanceof File) {
       const formData = apiUtils.toFormData(data)
-      return apiClient.post('/assets/', formData, {
+      return apiClient.post('/v1/assets/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
     }
-    return apiClient.post('/assets/', data)
+    return apiClient.post('/v1/assets/', data)
   },
 
   /**
@@ -43,34 +43,34 @@ export const assetsApi = {
     // Si des fichiers sont présents, utiliser FormData
     if (data.qr_code_image instanceof File || data.image instanceof File) {
       const formData = apiUtils.toFormData(data)
-      return apiClient.put(`/assets/${id}/`, formData, {
+      return apiClient.put(`/v1/assets/${id}/`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       })
     }
-    return apiClient.put(`/assets/${id}/`, data)
+    return apiClient.put(`/v1/assets/${id}/`, data)
   },
 
   /**
    * Mettre à jour partiellement un asset
    */
   async patchAsset(id, data) {
-    return apiClient.patch(`/assets/${id}/`, data)
+    return apiClient.patch(`/v1/assets/${id}/`, data)
   },
 
   /**
    * Supprimer un asset
    */
   async deleteAsset(id) {
-    return apiClient.delete(`/assets/${id}/`)
+    return apiClient.delete(`/v1/assets/${id}/`)
   },
 
   /**
    * Récupérer l'image QR code d'un asset
    */
   async getAssetQRImage(id) {
-    return apiClient.get(`/assets/${id}/qr_image/`, {
+    return apiClient.get(`/v1/assets/${id}/qr_image/`, {
       responseType: 'blob'
     })
   },
@@ -79,7 +79,7 @@ export const assetsApi = {
    * Télécharger l'image QR code d'un asset
    */
   async downloadQRImage(id, filename) {
-    const url = `/assets/${id}/qr_image/`
+    const url = `/v1/assets/${id}/qr_image/`
     return apiUtils.downloadFile(url, filename || `qr_code_${id}.png`)
   },
 
@@ -87,7 +87,7 @@ export const assetsApi = {
    * Récupérer l'historique des mouvements d'un asset
    */
   async getAssetMovements(id, params = {}) {
-    const url = apiUtils.buildUrl(`/assets/${id}/movements/`, params)
+    const url = apiUtils.buildUrl(`/v1/assets/${id}/movements/`, params)
     return apiClient.get(url)
   },
 
@@ -95,7 +95,7 @@ export const assetsApi = {
    * Déplacer un asset via scan QR
    */
   async moveFromScan(assetId, targetLocationId, note = '') {
-    return apiClient.post('/assets/move-from-scan/', {
+    return apiClient.post('/v1/assets/move-from-scan/', {
       asset_id: assetId,
       target_location_id: targetLocationId,
       note
@@ -106,7 +106,7 @@ export const assetsApi = {
    * Exporter la liste des assets en CSV
    */
   async exportAssets(params = {}) {
-    const url = apiUtils.buildUrl('/assets/export/', params)
+    const url = apiUtils.buildUrl('/v1/assets/export/', params)
     return apiUtils.downloadFile(url, 'assets_export.csv')
   },
 
@@ -114,7 +114,7 @@ export const assetsApi = {
    * Recherche d'assets avec autocomplétion
    */
   async searchAssets(query, limit = 10) {
-    return apiClient.get('/assets/', {
+    return apiClient.get('/v1/assets/', {
       params: {
         search: query,
         page_size: limit
@@ -126,21 +126,21 @@ export const assetsApi = {
    * Récupérer les statistiques des assets
    */
   async getAssetStats() {
-    return apiClient.get('/assets/stats/')
+    return apiClient.get('/v1/assets/stats/')
   },
 
   /**
    * Dupliquer un asset
    */
   async duplicateAsset(id) {
-    return apiClient.post(`/assets/${id}/duplicate/`)
+    return apiClient.post(`/v1/assets/${id}/duplicate/`)
   },
 
   /**
    * Marquer un asset comme en panne
    */
   async markAsBroken(id, note = '') {
-    return apiClient.patch(`/assets/${id}/`, {
+    return apiClient.patch(`/v1/assets/${id}/`, {
       status: 'broken',
       notes: note
     })
@@ -150,7 +150,7 @@ export const assetsApi = {
    * Marquer un asset comme en maintenance
    */
   async markAsMaintenance(id, note = '') {
-    return apiClient.patch(`/assets/${id}/`, {
+    return apiClient.patch(`/v1/assets/${id}/`, {
       status: 'maintenance',
       notes: note
     })
@@ -160,7 +160,7 @@ export const assetsApi = {
    * Marquer un asset comme en stock
    */
   async markAsStock(id) {
-    return apiClient.patch(`/assets/${id}/`, {
+    return apiClient.patch(`/v1/assets/${id}/`, {
       status: 'stock'
     })
   },
@@ -176,14 +176,14 @@ export const assetsApi = {
     if (locationId) {
       data.current_location = locationId
     }
-    return apiClient.patch(`/assets/${id}/`, data)
+    return apiClient.patch(`/v1/assets/${id}/`, data)
   },
 
   /**
    * Désassigner un asset
    */
   async unassignAsset(id) {
-    return apiClient.patch(`/assets/${id}/`, {
+    return apiClient.patch(`/v1/assets/${id}/`, {
       assigned_to: null,
       status: 'stock'
     })
@@ -193,35 +193,35 @@ export const assetsApi = {
    * Générer un nouveau QR code pour un asset
    */
   async regenerateQRCode(id) {
-    return apiClient.post(`/assets/${id}/regenerate-qr/`)
+    return apiClient.post(`/v1/assets/${id}/regenerate-qr/`)
   },
 
   /**
    * Importer des assets depuis un fichier CSV
    */
   async importAssets(file, onProgress) {
-    return apiUtils.uploadFile('/assets/import/', file, onProgress)
+    return apiUtils.uploadFile('/v1/assets/import/', file, onProgress)
   },
 
   /**
    * Récupérer le template CSV pour l'import
    */
   async getImportTemplate() {
-    return apiUtils.downloadFile('/assets/import-template/', 'assets_import_template.csv')
+    return apiUtils.downloadFile('/v1/assets/import-template/', 'assets_import_template.csv')
   },
 
   /**
    * Récupérer la liste des catégories
    */
   async getCategories() {
-    return apiClient.get('/categories/')
+    return apiClient.get('/v1/assets/category/')
   },
 
   /**
    * Récupérer la liste des emplacements
    */
   async getLocations() {
-    return apiClient.get('/locations/')
+    return apiClient.get('/v1/assets/location/')
   }
 }
 

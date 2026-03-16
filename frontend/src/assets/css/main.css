@@ -1,29 +1,202 @@
-/* Styles CSS personnalisés pour CMDB Inventory */
-
-/* Styles pour la landing page */
-.landing-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background: url('/path/to/your/image.jpg') no-repeat center center;
-  background-size: cover;
+:root {
+  --primary-color: #0d6efd;
+  --secondary-color: #ffffff;
+  --success-color: #198754;
+  --warning-color: #ffc107;
+  --info-color: #0dcaf0;
+  --gradient-primary: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+  --gradient-success: linear-gradient(135deg, #198754 0%, #157347 100%);
+  --gradient-warning: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  --gradient-info: linear-gradient(135deg, #0dcaf0 0%, #0ba8d0 100%);
+  --gradient-dark: linear-gradient(135deg, #212529 0%, #343a40 100%);
 }
 
-header {
-  text-align: center;
-  padding: 20px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+/* Grid system */
+.container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
-.hero {
-  text-align: center;
-  padding: 20px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+/* Improved responsive designs */
+@media (max-width: 1200px) {
+  .container {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-/* Autres styles existants */
-/* ... */
+@media (max-width: 768px) {
+  .landing-page {
+    padding: 1rem;
+  }
+
+  header, .hero {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-section .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-icon {
+    font-size: 2.5rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .container-fluid {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .stat-card {
+    margin-bottom: 1rem;
+  }
+
+  .hero-section {
+    padding: 2rem 1rem !important;
+  }
+
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+}
+
+/* Animation and transitions */
+body {
+  transition: background-color 0.3s ease;
+}
+
+.sidebar {
+  transition: transform 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 1000;
+  width: 280px;
+  transform: translateX(-100%);
+}
+
+.sidebar.show {
+  transform: translateX(0);
+}
+
+/* Home page enhancements */
+.home {
+  min-height: calc(100vh - 76px);
+}
+
+.hero-section {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #0b5ed7 100%);
+}
+
+.feature-icon {
+  transition: transform 0.3s ease;
+}
+
+.card:hover .feature-icon {
+  transform: scale(1.1);
+}
+
+.stat-card {
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.btn {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Background image utilities */
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+}
+
+.bg-gradient-success {
+  background: var(--gradient-success);
+}
+
+.bg-gradient-warning {
+  background: var(--gradient-warning);
+}
+
+.bg-gradient-info {
+  background: var(--gradient-info);
+}
+
+.bg-gradient-dark {
+  background: var(--gradient-dark);
+}
+
+/* Animation classes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.8s ease forwards;
+}
+
+/* Card enhancements */
+.card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+}
+
+/* Search input enhancements */
+.search-input-lg {
+  border-radius: 50px !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+.search-input-lg:focus {
+  box-shadow: 0 0 0 0.3rem rgba(13, 110, 253, 0.25) !important;
+}

@@ -12,7 +12,7 @@
       
       <ul class="sidebar-nav nav flex-column">
         <li class="nav-item">
-          <router-link to="/" class="nav-link" :class="{ active: $route.name === 'Dashboard' }">
+          <router-link :to="{ name: 'Dashboard' }" class="nav-link" :class="{ active: $route.name === 'Dashboard' }">
             <i class="bi bi-speedometer2"></i>
             <span>Dashboard</span>
           </router-link>

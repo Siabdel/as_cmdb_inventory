@@ -10,6 +10,8 @@ from inventory.views import DashboardView
 from scanner.views import public_scan_result
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from rest_framework.authtoken.views import obtain_auth_token
+from inventory.views import CurrentUserView
 
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard'),  # ← accueil
@@ -29,6 +31,9 @@ urlpatterns = [
     path('api/v1/stock/', include('stock.urls')),
     # Authentification DRF
     path('api-auth/', include('rest_framework.urls')),
+    # Authentification par token (pour le frontend)
+    path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
+    path('api/auth/user/', CurrentUserView.as_view(), name='api_current_user'),
 ]
 
 # URLs en mode DEBUG uniquement

@@ -24,13 +24,18 @@ export default defineConfig({
         changeOrigin: true,
         secure: false
       }
-    }
+    },
   },
   build: {
     outDir: 'dist',
     sourcemap: true,
     rollupOptions: {
+      input: ['src/main.ts', 'public/index.html'], // Ajoutons ici 'public/index.html'
+      //external: ['bootstrap'],
       output: {
+        assetFileNames: 'assets/[name]-[hash][extname]',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
         manualChunks: {
           vendor: ['vue', 'vue-router', 'pinia'],
           bootstrap: ['bootstrap'],
@@ -38,13 +43,7 @@ export default defineConfig({
           qr: ['html5-qrcode']
         }
       }
-    }
-  },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        additionalData: `@import "@/assets/scss/variables.scss";`
-      }
-    }
+    },
+    assetsDir: 'public/'
   }
 })

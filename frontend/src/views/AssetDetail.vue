@@ -99,6 +99,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { assetsApi } from '@/api/assets'
 
 export default {
   name: 'AssetDetail',
@@ -112,24 +113,28 @@ export default {
     const loadAsset = async () => {
       loading.value = true
       try {
-        // Simuler l'appel API
-        await new Promise(resolve => setTimeout(resolve, 500))
+        const response = await assetsApi.getAsset(route.params.id)
+        const data = response.data
         
-        // Données simulées
+        // Transformer les données pour correspondre au template
         asset.value = {
-          id: route.params.id,
-          internal_code: 'PC-001',
-          name: 'Dell OptiPlex 7090',
-          brand_name: 'Dell',
-          model: 'OptiPlex 7090',
-          category_name: 'PC',
-          status: 'use',
-          location_name: 'Bureau 101',
-          assigned_to_name: 'Jean Dupont'
+          id: data.id,
+          internal_code: data.serial_number || data.id.toString().padStart(4, '0'),
+          name: data.name,
+          brand_name: data.brand?.name || '',
+          model: data.model || '',
+          category_name: data.category?.name || '',
+          status: data.status || 'stock',
+          location_name: data.current_location?.name || '',
+          assigned_to_name: data.assigned_to || ''
         }
       } catch (error) {
         console.error('Erreur:', error)
-        toast.error('Erreur lors du chargement')
+        if (error.response?.status === 404) {
+          toast.error('Équipement non trouvé')
+        } else {
+          toast.error('Erreur lors du chargement')
+        }
       } finally {
         loading.value = false
       }
