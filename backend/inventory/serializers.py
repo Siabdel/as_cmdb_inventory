@@ -108,7 +108,7 @@ class AssetListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asset
         fields = [
-            'id', 'name', 'model', 'serial_number',
+            'id', 'name', 'internal_code', 'model', 'serial_number',
             'category', 'brand', 'location',
             'status', 'condition_state',
             'assigned_to', 'tags', 'photo',
@@ -128,11 +128,14 @@ class AssetDetailSerializer(serializers.ModelSerializer):
 
     # Champs write-only pour create/update
     category_id         = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), source='category', write_only=True)
+        queryset=Category.objects.all(), source='category', write_only=True,
+        required=False, allow_null=True)
     brand_id            = serializers.PrimaryKeyRelatedField(
-        queryset=Brand.objects.all(), source='brand', write_only=True)
+        queryset=Brand.objects.all(), source='brand', write_only=True,
+        required=False, allow_null=True)
     current_location_id = serializers.PrimaryKeyRelatedField(
-        queryset=Location.objects.all(), source='current_location', write_only=True)
+        queryset=Location.objects.all(), source='current_location', write_only=True,
+        required=False, allow_null=True)
     tag_ids             = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), source='tags',
         many=True, write_only=True, required=False)
@@ -140,7 +143,7 @@ class AssetDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Asset
         fields = [
-            'id', 'name', 'model', 'serial_number', 'description',
+            'id', 'name', 'internal_code', 'model', 'serial_number', 'description',
             'category', 'category_id',
             'brand', 'brand_id',
             'current_location', 'current_location_id',
@@ -151,7 +154,16 @@ class AssetDetailSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at']
 
+    def validate(self, attrs):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Asset validate attrs: {attrs}")
+        return attrs
+
     def create(self, validated_data):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Asset create validated_data: {validated_data}")
         tags = validated_data.pop('tags', [])
         asset = super().create(validated_data)
         asset.tags.set(tags)

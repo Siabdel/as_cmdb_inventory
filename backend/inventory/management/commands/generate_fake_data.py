@@ -17,10 +17,10 @@ ASSET_PHOTOS = {
         'UltraSharp U2722': 'https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/peripherals/monitors/u-series/u2722/media-gallery/monitor-u2722-gallery-1.psd?fmt=png-alpha&pscan=auto&scl=1',
     },
     'HP': {
-        'EliteBook 840 G8': 'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c08055652.png',
-        'ProDesk 600':      'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c07195013.png',
-        'ProLiant DL380':   'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c04128830.png',
-        'LaserJet Pro':     'https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/c07627866.png',
+        'EliteBook 840 G8': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Laptop_600.jpg/320px-Laptop_600.jpg',
+        'ProDesk 600':      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/PC_Systemeinheit_vorne_Karsten_N.jpg/320px-PC_Systemeinheit_vorne_Karsten_N.jpg',
+        'ProLiant DL380':   'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Dell_PowerEdge_702x.jpg/320px-Dell_PowerEdge_702x.jpg',
+        'LaserJet Pro':     'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/HP_LaserJet_1020.jpg/320px-HP_LaserJet_1020.jpg',
     },
     'Cisco': {
         'Catalyst 9200': 'https://www.cisco.com/c/dam/en/us/products/switches/catalyst-9200-series-switches/index/jcr:content/Grid/category_atl/layout-category-atl/anchor_info/image.img.jpg/1588266977086.jpg',
@@ -29,9 +29,9 @@ ASSET_PHOTOS = {
         'Meraki MX68':   'https://meraki.cisco.com/wp-content/uploads/2020/01/mx68-front.png',
     },
     'Lenovo': {
-        'ThinkPad X1 Carbon': 'https://p1-ofp.static.pub/medias/bWFzdGVyfHJvb3R8MjQ2NzQ5fGltYWdlL3BuZ3xoNTYvaGZhLzE0NjE3NzY1NzI5NTY2LnBuZw/lenovo-laptop-thinkpad-x1-carbon-gen-11-14-hero.png',
-        'ThinkCentre M90':    'https://p1-ofp.static.pub/medias/bWFzdGVyfHJvb3R8MTIzNTUyfGltYWdlL3BuZ3xoMTYvaGNiLzE0NjIxMzI1NTI4OTI2LnBuZw/lenovo-desktops-thinkcentre-m90t-gen3-hero.png',
-        'ThinkSystem SR650':  'https://lenovopress.lenovo.com/assets/images/LP0955/ThinkSystem%20SR650%20V2%20server.jpg',
+        'ThinkPad X1 Carbon': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Laptop_600.jpg/320px-Laptop_600.jpg',
+        'ThinkCentre M90':    'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/PC_Systemeinheit_vorne_Karsten_N.jpg/320px-PC_Systemeinheit_vorne_Karsten_N.jpg',
+        'ThinkSystem SR650':  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Dell_PowerEdge_702x.jpg/320px-Dell_PowerEdge_702x.jpg',
     },
     'Apple': {
         'MacBook Pro M3': 'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310?wid=400&hei=400&fmt=jpeg&qlt=90',
@@ -54,9 +54,9 @@ ASSET_PHOTOS = {
         'DCP-L2550DN':  'https://www.brother.fr/-/media/Brother/Products/DCP-L2550DN/DCP-L2550DN_main.ashx',
     },
     'Samsung': {
-        'Galaxy Tab S9': 'https://image-us.samsung.com/SamsungUS/home/mobile/galaxy-tab/all-galaxy-tabs/07132023/tab-s9-wifi-graphite-400x400.jpg',
-        'Odyssey G7':    'https://image-us.samsung.com/SamsungUS/home/computing/monitors/all-monitors/06112020/lc32g75tqsnxza-400x400.jpg',
-        'T7 Shield SSD': 'https://image-us.samsung.com/SamsungUS/home/computing/memory-storage/portable-ssd/06062022/mu-pe2t0s-400x400.jpg',
+        'Galaxy Tab S9': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Laptop_600.jpg/320px-Laptop_600.jpg',
+        'Odyssey G7':    'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/LCD_monitor.jpg/320px-LCD_monitor.jpg',
+        'T7 Shield SSD': 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/External_SSD.jpg/320px-External_SSD.jpg',
     },
     'Asus': {
         'ZenBook 14':      'https://dlcdnwebimgs.asus.com/gain/B9560CB6-4EB1-4EC6-B6A9-C09E05C8BB1A/w800',
@@ -146,11 +146,17 @@ ASSET_MODELS = {
 def get_asset_photo(brand_name: str, model_name: str, category_icon: str) -> str:
     """Retourne une URL photo réaliste pour un asset IT."""
     brand_photos = ASSET_PHOTOS.get(brand_name, {})
+    photo_url = ''
     if model_name in brand_photos:
-        return brand_photos[model_name]
-    if brand_photos:
-        return next(iter(brand_photos.values()))
-    return CATEGORY_FALLBACK_PHOTOS.get(category_icon, '')
+        photo_url = brand_photos[model_name]
+    elif brand_photos:
+        photo_url = next(iter(brand_photos.values()))
+    else:
+        photo_url = CATEGORY_FALLBACK_PHOTOS.get(category_icon, '')
+    # Tronquer à 200 caractères pour correspondre à la limite de la base de données
+    if len(photo_url) > 200:
+        photo_url = photo_url[:200]
+    return photo_url
 
 
 class Command(BaseCommand):

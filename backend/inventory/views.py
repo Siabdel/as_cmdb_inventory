@@ -142,6 +142,7 @@ class AssetViewSet(viewsets.ModelViewSet):
         data = Asset.objects.values('status').annotate(count=Count('id'))
         return Response(data)
     
+    
     @action(detail=False, methods=['get'], url_path='by-category')
     def by_category(self, request):
         """Répartition par catégorie."""
@@ -348,3 +349,68 @@ def by_category(request):
         })
         
     return Response(data)
+
+
+# Vues admin pour QR code et impression
+from django.shortcuts import get_object_or_404, redirect
+from django.http import HttpResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from scanner.models import QRCode
+import tempfile
+import os
+
+@staff_member_required
+def generate_qrcode_view(request, asset_id):
+    """Génère un QR code pour un asset et le sauvegarde."""
+    from inventory.models import Asset
+    asset = get_object_or_404(Asset, id=asset_id)
+    
+    # Vérifier si un QRCode existe déjà
+    qr, created = QRCode.objects.get_or_create(asset=asset)
+    
+    # Générer l'image QR
+    try:
+        from barcode_service import generate_qrcode_image
+        data = f"{request.scheme}://{request.get_host()}/scan/{qr.uuid_token}/"
+        buffer = generate_qrcode_image(data, size=12, border=2)
+        
+        # Sauvegarder l'image dans le modèle
+        from django.core.files.base import ContentFile
+        filename = f"qr_{asset.internal_code}.png"
+        qr.image.save(filename, ContentFile(buffer.getvalue()), save=True)
+        qr.url = data
+        qr.save()
+    except ImportError:
+        # Si le service n'est pas disponible, on crée juste l'objet sans image
+        pass
+    
+    # Rediriger vers la page de changement de l'asset
+    return redirect(f'/admin/inventory/asset/{asset_id}/change/')
+
+@staff_member_required
+def print_label_view(request, asset_id):
+    """Génère un PDF d'étiquette pour impression."""
+    from inventory.models import Asset
+    asset = get_object_or_404(Asset, id=asset_id)
+    
+    # Utiliser le service de génération de PDF (à implémenter)
+    # Pour l'instant, on retourne un PDF simple
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    from io import BytesIO
+    
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    p.drawString(100, 750, f"Étiquette Asset: {asset.name}")
+    p.drawString(100, 730, f"Code interne: {asset.internal_code}")
+    p.drawString(100, 710, f"Série: {asset.serial_number}")
+    p.drawString(100, 690, f"Catégorie: {asset.category.name if asset.category else 'N/A'}")
+    p.drawString(100, 670, f"Emplacement: {asset.current_location.name if asset.current_location else 'N/A'}")
+    # Ajouter un code-barres ou QR code si disponible
+    p.showPage()
+    p.save()
+    
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="etiquette_asset_{asset.internal_code}.pdf"'
+    return response

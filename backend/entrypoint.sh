@@ -7,10 +7,12 @@ mkdir -p /app/logs
 
 # Attendre que PostgreSQL soit prêt
 echo "Waiting for PostgreSQL..."
-while ! pg_isready -h db -p 5432 -U inventory_user; do
+export PGPASSWORD=inventory_password
+while ! pg_isready -h db -p 5432 -U inventory_user -d inventory_db; do
   sleep 1
 done
 echo "PostgreSQL is ready!"
+unset PGPASSWORD
 
 # Exécuter les migrations
 echo "Running migrations..."

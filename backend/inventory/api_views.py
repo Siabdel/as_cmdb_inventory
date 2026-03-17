@@ -77,6 +77,16 @@ class AssetViewSet(viewsets.ModelViewSet):
             return AssetListSerializer
         return AssetDetailSerializer
 
+    def create(self, request, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Asset create request data: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Asset create error: {e}", exc_info=True)
+            raise
+
     # ── Actions custom ──────────────────────────────────────
 
     @action(detail=True, methods=['post'], url_path='move')

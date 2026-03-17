@@ -25,7 +25,7 @@ COPY . .
 RUN mkdir -p /app/media/qr_codes /app/static /app/logs
 
 # Script d'entrée
-COPY entrypoint.sh /app/entrypoint.sh
+COPY backend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Exposition du port

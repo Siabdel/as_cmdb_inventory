@@ -59,24 +59,27 @@ class Tag(TimeStampMixin):
 
 
 class Asset(TimeStampMixin):
-    STATUS_CHOICES = [
-        ('active',   'Active'),
-        ('inactive', 'Inactive'),
-        ('archived', 'Archived'),
-    ]
-    CONDITION_CHOICES = [
-        ('new',     'New'),
-        ('used',    'Used'),
-        ('damaged', 'Damaged'),
-    ]
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'Active'
+        INACTIVE = 'inactive', 'Inactif'
+        MAINTENANCE = 'maintenance', 'En maintenance'
+        REPAIR = 'repair', 'En réparation'
+        BROKEN = 'broken', 'En panne'
+        ARCHIVED = 'archived', 'Archivé'
+    
+    class Condition(models.TextChoices):
+        NEW = 'new', 'Neuf'
+        USED = 'used', 'Occasion'
+        DAMAGED = 'damaged', 'Endommagé'
 
     name             = models.CharField(max_length=100)
+    internal_code    = models.CharField(max_length=50, unique=True, blank=True, null=True)
     category         = models.ForeignKey(Category, on_delete=models.SET_NULL,
                                          null=True, related_name='assets')
     brand            = models.ForeignKey(Brand, on_delete=models.SET_NULL,
                                          null=True, related_name='assets')
     model            = models.CharField(max_length=100)
-    serial_number    = models.CharField(max_length=150, unique=True)
+    serial_number    = models.CharField(max_length=150, unique=True, blank=True)
     description      = models.TextField(blank=True, null=True)
     purchase_date    = models.DateField(blank=True, null=True)
     purchase_price   = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -84,13 +87,30 @@ class Asset(TimeStampMixin):
     current_location = models.ForeignKey(Location, on_delete=models.SET_NULL,
                                          null=True, related_name='assets')
     assigned_to      = models.CharField(max_length=100, blank=True, null=True)
-    status           = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
-    condition_state  = models.CharField(max_length=10, choices=CONDITION_CHOICES, default='new')
+    status           = models.CharField(max_length=15, choices=Status.choices, default=Status.ACTIVE)
+    condition_state  = models.CharField(max_length=10, choices=Condition.choices, default=Condition.NEW)
     tags             = models.ManyToManyField(Tag, blank=True)
     photo            = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.name} [{self.serial_number}]"
+
+    def save(self, *args, **kwargs):
+        from django.utils import timezone
+        import uuid
+        # Générer un internal_code s'il est vide
+        if not self.internal_code:
+            # Format: CI-YYYYMMDD-HHMMSS-XXXX (XXXX aléatoire)
+            timestamp = timezone.now().strftime('%Y%m%d-%H%M%S')
+            random_suffix = uuid.uuid4().hex[:4].upper()
+            self.internal_code = f"CI-{timestamp}-{random_suffix}"
+        # Générer un serial_number s'il est vide
+        if not self.serial_number:
+            # Format: SR-YYYYMMDD-HHMMSS-XXXX
+            timestamp = timezone.now().strftime('%Y%m%d-%H%M%S')
+            random_suffix = uuid.uuid4().hex[:4].upper()
+            self.serial_number = f"SR-{timestamp}-{random_suffix}"
+        super().save(*args, **kwargs)
 
 
 class AssetMovement(TimeStampMixin):

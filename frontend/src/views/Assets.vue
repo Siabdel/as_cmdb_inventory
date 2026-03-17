@@ -35,19 +35,12 @@
           <div class="col-md-2">
             <select class="form-select" v-model="filters.status">
               <option value="">Tous les statuts</option>
-              <option value="neuf">Neuf</option>
-              <option value="stock">En stock</option>
-              <option value="installe">Installé</option>
-              <option value="use">En utilisation</option>
-              <option value="broken">En panne</option>
+              <option value="active">En utilisation</option>
+              <option value="inactive">En stock</option>
               <option value="maintenance">En maintenance</option>
-              <option value="reparation">En réparation</option>
-              <option value="ok">OK</option>
-              <option value="occasion">Occasion</option>
-              <option value="sold">Vendu</option>
-              <option value="disposed">Mis au rebut</option>
-              <option value="lost">Perdu</option>
-              <option value="hs">Hors service</option>
+              <option value="repair">En réparation</option>
+              <option value="broken">En panne</option>
+              <option value="archived">Archivé</option>
             </select>
           </div>
           <div class="col-md-2">
@@ -148,7 +141,7 @@
                 </td>
                 <td>
                   <span class="badge bg-light text-dark">
-                    {{ asset.category_name || 'Non définie' }}
+                    {{ asset.category?.name || 'Non définie' }}
                   </span>
                 </td>
                 <td>
@@ -158,7 +151,7 @@
                 </td>
                 <td>
                   <i class="bi bi-geo-alt me-1"></i>
-                  {{ asset.location_name || 'Non défini' }}
+                  {{ asset.location?.name || 'Non défini' }}
                 </td>
                 <td>
                   <div class="btn-group btn-group-sm">
@@ -205,7 +198,7 @@
                 
                 <div class="mb-2">
                   <i class="bi bi-geo-alt me-1"></i>
-                  <small>{{ asset.location_name || 'Emplacement non défini' }}</small>
+                  <small>{{ asset.location?.name || 'Emplacement non défini' }}</small>
                 </div>
                 
                 <div class="d-flex gap-2">
@@ -385,38 +378,24 @@ export default {
 
     const getStatusClass = (status) => {
       const classes = {
-        'neuf': 'badge bg-primary',
-        'stock': 'badge bg-info',
-        'installe': 'badge bg-secondary',
-        'use': 'badge bg-success',
-        'broken': 'badge bg-danger',
+        'active': 'badge bg-success',
+        'inactive': 'badge bg-info',
         'maintenance': 'badge bg-warning text-dark',
-        'reparation': 'badge bg-warning text-dark',
-        'ok': 'badge bg-success',
-        'occasion': 'badge bg-info',
-        'sold': 'badge bg-dark',
-        'disposed': 'badge bg-secondary',
-        'lost': 'badge bg-dark',
-        'hs': 'badge bg-danger'
+        'repair': 'badge bg-warning text-dark',
+        'broken': 'badge bg-danger',
+        'archived': 'badge bg-secondary',
       }
       return classes[status] || 'badge bg-secondary'
     }
 
     const getStatusLabel = (status) => {
       const labels = {
-        'neuf': 'Neuf',
-        'stock': 'En stock',
-        'installe': 'Installé',
-        'use': 'En utilisation',
-        'broken': 'En panne',
+        'active': 'En utilisation',
+        'inactive': 'En stock',
         'maintenance': 'En maintenance',
-        'reparation': 'En réparation',
-        'ok': 'OK',
-        'occasion': 'Occasion',
-        'sold': 'Vendu',
-        'disposed': 'Mis au rebut',
-        'lost': 'Perdu',
-        'hs': 'Hors service'
+        'repair': 'En réparation',
+        'broken': 'En panne',
+        'archived': 'Archivé',
       }
       return labels[status] || status
     }

@@ -51,42 +51,52 @@
 
                 <div class="col-md-6">
                   <label class="form-label">Catégorie</label>
-                  <select class="form-select" v-model="form.category">
+                  <select class="form-select" v-model="form.category_id">
                     <option value="">Sélectionner une catégorie</option>
-                    <option value="1">PC</option>
-                    <option value="2">Écran</option>
-                    <option value="3">Clavier</option>
+                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                      {{ cat.name }}
+                    </option>
                   </select>
                 </div>
 
                 <div class="col-md-6">
                   <label class="form-label">Marque</label>
-                  <select class="form-select" v-model="form.brand">
+                  <select class="form-select" v-model="form.brand_id">
                     <option value="">Sélectionner une marque</option>
-                    <option value="1">Dell</option>
-                    <option value="2">HP</option>
-                    <option value="3">Samsung</option>
+                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">
+                      {{ brand.name }}
+                    </option>
                   </select>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Modèle</label>
+                  <label class="form-label">Modèle *</label>
                   <input
                     type="text"
                     class="form-control"
                     v-model="form.model"
+                    :class="{ 'is-invalid': errors.model }"
                     placeholder="OptiPlex 7090"
+                    required
                   >
+                  <div v-if="errors.model" class="invalid-feedback">
+                    {{ errors.model }}
+                  </div>
                 </div>
 
                 <div class="col-md-6">
-                  <label class="form-label">Numéro de série</label>
+                  <label class="form-label">Numéro de série *</label>
                   <input
                     type="text"
                     class="form-control"
                     v-model="form.serial_number"
+                    :class="{ 'is-invalid': errors.serial_number }"
                     placeholder="ABC123456789"
+                    required
                   >
+                  <div v-if="errors.serial_number" class="invalid-feedback">
+                    {{ errors.serial_number }}
+                  </div>
                 </div>
 
                 <div class="col-12">
@@ -108,20 +118,31 @@
               <div class="mb-3">
                 <label class="form-label">Statut</label>
                 <select class="form-select" v-model="form.status">
-                  <option value="stock">En stock</option>
-                  <option value="use">En utilisation</option>
-                  <option value="broken">En panne</option>
+                  <option value="active">En utilisation</option>
+                  <option value="inactive">En stock</option>
                   <option value="maintenance">En maintenance</option>
+                  <option value="repair">En réparation</option>
+                  <option value="broken">En panne</option>
+                  <option value="archived">Archivé</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">État physique</label>
+                <select class="form-select" v-model="form.condition_state">
+                  <option value="new">Neuf</option>
+                  <option value="used">Occasion</option>
+                  <option value="damaged">Endommagé</option>
                 </select>
               </div>
 
               <div class="mb-3">
                 <label class="form-label">Emplacement</label>
-                <select class="form-select" v-model="form.current_location">
+                <select class="form-select" v-model="form.current_location_id">
                   <option value="">Sélectionner un emplacement</option>
-                  <option value="1">Bureau 101</option>
-                  <option value="2">Bureau 102</option>
-                  <option value="3">Stock principal</option>
+                  <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                    {{ loc.name }}
+                  </option>
                 </select>
               </div>
 
@@ -193,6 +214,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { assetsApi } from '@/api/assets'
+import apiClient from '@/api/client'
 
 export default {
   name: 'AssetForm',
@@ -204,16 +227,21 @@ export default {
     const loading = ref(false)
     const isEdit = computed(() => !!route.params.id)
 
+    const categories = ref([])
+    const brands = ref([])
+    const locations = ref([])
+
     const form = reactive({
       internal_code: '',
       name: '',
-      category: '',
-      brand: '',
+      category_id: null,
+      brand_id: null,
       model: '',
       serial_number: '',
       description: '',
-      status: 'stock',
-      current_location: '',
+      status: 'active',
+      condition_state: 'new',
+      current_location_id: null,
       purchase_date: '',
       purchase_price: '',
       warranty_end: '',
@@ -222,30 +250,53 @@ export default {
 
     const errors = reactive({
       internal_code: '',
-      name: ''
+      name: '',
+      model: '',
+      serial_number: ''
     })
+
+    const loadReferenceData = async () => {
+      try {
+        const [catRes, brandRes, locRes] = await Promise.all([
+          apiClient.get('/v1/inventory/category/'),
+          apiClient.get('/v1/inventory/brand/'),
+          apiClient.get('/v1/inventory/location/')
+        ])
+        categories.value = catRes.data.results || []
+        brands.value = brandRes.data.results || []
+        locations.value = locRes.data.results || []
+      } catch (error) {
+        console.error('Erreur lors du chargement des données de référence:', error)
+        toast.error('Impossible de charger les listes')
+      }
+    }
 
     const loadAsset = async () => {
       if (!isEdit.value) return
 
       loading.value = true
       try {
-        // Simuler l'appel API
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Données simulées pour l'édition
-        Object.assign(form, {
-          internal_code: 'PC-001',
-          name: 'Dell OptiPlex 7090',
-          category: '1',
-          brand: '1',
-          model: 'OptiPlex 7090',
-          status: 'use',
-          current_location: '1'
-        })
+        const response = await assetsApi.getAsset(route.params.id)
+        const asset = response.data
+
+        // Mapper les champs de l'API vers le formulaire
+        form.internal_code = asset.internal_code || ''
+        form.name = asset.name || ''
+        form.category_id = asset.category?.id || null
+        form.brand_id = asset.brand?.id || null
+        form.model = asset.model || ''
+        form.serial_number = asset.serial_number || ''
+        form.description = asset.description || ''
+        form.status = asset.status || 'active'
+        form.condition_state = asset.condition_state || 'new'
+        form.current_location_id = asset.current_location?.id || null
+        form.purchase_date = asset.purchase_date || ''
+        form.purchase_price = asset.purchase_price || ''
+        form.warranty_end = asset.warranty_end || ''
+        form.notes = asset.notes || ''
       } catch (error) {
         console.error('Erreur:', error)
-        toast.error('Erreur lors du chargement')
+        toast.error('Erreur lors du chargement de l\'équipement')
       } finally {
         loading.value = false
       }
@@ -255,11 +306,23 @@ export default {
       // Reset errors
       errors.internal_code = ''
       errors.name = ''
+      errors.model = ''
+      errors.serial_number = ''
       
       let isValid = true
 
       if (!form.name.trim()) {
         errors.name = 'Le nom est requis'
+        isValid = false
+      }
+
+      if (!form.model.trim()) {
+        errors.model = 'Le modèle est requis'
+        isValid = false
+      }
+
+      if (!form.serial_number.trim()) {
+        errors.serial_number = 'Le numéro de série est requis'
         isValid = false
       }
 
@@ -274,21 +337,57 @@ export default {
       loading.value = true
 
       try {
-        // Simuler l'appel API
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Préparer les données pour l'API
+        const payload = {
+          name: form.name,
+          category_id: form.category_id,
+          brand_id: form.brand_id,
+          model: form.model,
+          serial_number: form.serial_number,
+          description: form.description,
+          status: form.status,
+          condition_state: form.condition_state,
+          current_location_id: form.current_location_id,
+          purchase_date: form.purchase_date || null,
+          purchase_price: form.purchase_price ? parseFloat(form.purchase_price) : 0.00,
+          warranty_end: form.warranty_end || null,
+        }
+
+        // Supprimer les champs vides ou null (sauf purchase_price qui a une valeur par défaut)
+        Object.keys(payload).forEach(key => {
+          if (payload[key] === '' || payload[key] === null) {
+            delete payload[key]
+          }
+        })
+
+        if (isEdit.value) {
+          await assetsApi.updateAsset(route.params.id, payload)
+          toast.success('Équipement mis à jour avec succès')
+        } else {
+          await assetsApi.createAsset(payload)
+          toast.success('Équipement créé avec succès')
+        }
         
-        toast.success(isEdit.value ? 'Équipement mis à jour' : 'Équipement créé')
         router.push('/assets')
       } catch (error) {
         console.error('Erreur:', error)
-        toast.error('Erreur lors de la sauvegarde')
+        if (error.response?.data) {
+          // Afficher les erreurs de validation
+          const data = error.response.data
+          if (data.name) errors.name = data.name
+          if (data.internal_code) errors.internal_code = data.internal_code
+          toast.error('Erreur de validation')
+        } else {
+          toast.error('Erreur lors de la sauvegarde')
+        }
       } finally {
         loading.value = false
       }
     }
 
-    onMounted(() => {
-      loadAsset()
+    onMounted(async () => {
+      await loadReferenceData()
+      await loadAsset()
     })
 
     return {
@@ -296,6 +395,9 @@ export default {
       isEdit,
       form,
       errors,
+      categories,
+      brands,
+      locations,
       handleSubmit
     }
   }

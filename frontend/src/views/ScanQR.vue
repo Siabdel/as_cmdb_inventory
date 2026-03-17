@@ -57,10 +57,10 @@
                       <strong>Nom:</strong> {{ selectedAsset.name }}
                     </div>
                     <div class="mb-2">
-                      <strong>Catégorie:</strong> {{ selectedAsset.category_name || 'Non définie' }}
+                      <strong>Catégorie:</strong> {{ selectedAsset.category?.name || 'Non définie' }}
                     </div>
                     <div class="mb-2">
-                      <strong>Marque:</strong> {{ selectedAsset.brand_name || 'Non définie' }}
+                      <strong>Marque:</strong> {{ selectedAsset.brand?.name || 'Non définie' }}
                     </div>
                     <div class="mb-2">
                       <strong>Statut:</strong>
@@ -80,8 +80,8 @@
                       Localisation
                     </h6>
                     <div class="mb-2">
-                      <strong>Emplacement:</strong> 
-                      {{ selectedAsset.location_name || 'Non défini' }}
+                      <strong>Emplacement:</strong>
+                      {{ selectedAsset.current_location?.name || 'Non défini' }}
                     </div>
                     <div class="mb-2">
                       <strong>Assigné à:</strong> 

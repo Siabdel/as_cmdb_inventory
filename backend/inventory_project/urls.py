@@ -6,15 +6,21 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from inventory.views import DashboardView
+from inventory.views import DashboardView, CurrentUserView, generate_qrcode_view, print_label_view
 from scanner.views import public_scan_result
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
-from inventory.views import CurrentUserView
 
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard'),  # ← accueil
+    # URLs personnalisées pour l'admin (QR code et impression) - doivent être avant admin.site.urls
+    path('django-admin/inventory/asset/<int:asset_id>/generate_qrcode/',
+         generate_qrcode_view,
+         name='admin_generate_qrcode'),
+    path('django-admin/inventory/asset/<int:asset_id>/print_label/',
+         print_label_view,
+         name='admin_print_label'),
     # Interface d'administration Django
     path('django-admin/', admin.site.urls),
      # Administration CMDB (interface custom)
