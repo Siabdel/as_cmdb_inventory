@@ -47,7 +47,7 @@ services:
     volumes:
       - ./backend:/app
       - media_files:/app/media
-      - static_files:/app/static
+      - ./backend/static:/app/static
       - ./qr_codes:/app/media/qr_codes
     restart: unless-stopped
     networks:

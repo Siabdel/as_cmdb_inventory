@@ -203,9 +203,9 @@
         unit_price: {{ item.unit_price|default:0 }},
         total_value: {{ item.total_value|default:0 }},
         type: "{{ item.type }}",
-        category_name: "{{ item.category.name if item.category else '' }}",
+        category_name: "{{ item.category.name|default:'' }}",
         manufacturer: "{{ item.manufacturer|default:'' }}",
-        photo: "{{ item.photo.url if item.photo else '' }}",
+        photo: "{% if item.photo %}{{ item.photo.url }}{% endif %}",
         updated_at: "{{ item.updated_at|date:'Y-m-d' }}"
     };
 </script>

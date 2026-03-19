@@ -6,7 +6,7 @@ from django.views.generic import TemplateView
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
@@ -60,7 +60,7 @@ class TagViewSet(viewsets.ModelViewSet):
 
 
 class AssetViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'condition_state', 'category', 'brand', 'current_location']
     search_fields = ['name', 'serial_number', 'model', 'assigned_to']
@@ -198,7 +198,7 @@ class AssetMovementViewSet(viewsets.ModelViewSet):
         'asset', 'from_location', 'to_location'
     ).order_by('-moved_at')
     serializer_class = AssetMovementSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ['asset', 'from_location', 'to_location']
     ordering_fields = ['moved_at']
@@ -206,7 +206,7 @@ class AssetMovementViewSet(viewsets.ModelViewSet):
 
 
 class DashboardViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     @action(detail=False, methods=['get'], url_path='stats')
     def stats(self, request):
@@ -233,7 +233,7 @@ class DashboardViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 class DashboardStatsView(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def list(self, request):
         """Stats globales pour le dashboard."""

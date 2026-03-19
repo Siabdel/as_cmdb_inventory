@@ -1,7 +1,7 @@
 from django.shortcuts import render
 
 # Create your views here.
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +11,8 @@ from django.db.models import Sum, F
 from .models import StockItem, StockMovement
 from .serializers import (StockItemSerializer, StockItemListSerializer,
                            StockMovementSerializer)
+from inventory.models import Category
+from django.db.models import Count
 
 
 class StockItemViewSet(viewsets.ModelViewSet):
@@ -98,3 +100,17 @@ class StockMovementViewSet(viewsets.ModelViewSet):
     ordering_fields    = ['created_at']
     http_method_names  = ['get', 'post', 'head', 'options']  # pas de PUT/DELETE
 
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Vue en lecture seule pour les catégories (utilisées dans le stock).
+    """
+    queryset = Category.objects.annotate(asset_count=Count('assets')).order_by('name')
+    permission_classes = [IsAuthenticated]
+
+    class CategorySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Category
+            fields = ['id', 'name', 'asset_count']
+
+    serializer_class = CategorySerializer
