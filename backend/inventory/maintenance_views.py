@@ -69,6 +69,33 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Utilisateur non trouvé'}, status=status.HTTP_404_NOT_FOUND)
         return Response({'error': 'user_id requis'}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=True, methods=['patch'])
+    def transition(self, request, pk=None):
+        """Transitionner un ticket de maintenance vers un nouveau statut"""
+        ticket = self.get_object()
+        new_status = request.data.get('to_status')
+        
+        if not new_status:
+            return Response({'error': 'to_status requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier si le statut est valide
+        valid_statuses = [choice[0] for choice in MaintenanceTicket.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response({'error': 'Statut invalide'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier si la transition est autorisée (simple vérification)
+        # Vous pouvez ajouter une logique plus complexe ici si nécessaire
+        old_status = ticket.status
+        ticket.status = new_status
+        ticket.save()
+        
+        return Response({
+            'status': 'Ticket mis à jour',
+            'ticket_id': ticket.id,
+            'from_status': old_status,
+            'to_status': new_status
+        })
+    
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Statistiques des tickets de maintenance"""

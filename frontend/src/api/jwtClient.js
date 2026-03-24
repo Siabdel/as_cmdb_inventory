@@ -1,7 +1,6 @@
 /**
- * Client API Axios configuré pour CMDB Inventory
+ * Client API Axios configuré pour CMDB Inventory avec JWT
  */
-
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
 
@@ -19,9 +18,9 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Ajouter le token d'authentification si disponible
-    const token = localStorage.getItem('auth_token')
+    const token = localStorage.getItem('access_token')
     if (token) {
-      config.headers.Authorization = `Token ${token}`
+      config.headers.Authorization = `Bearer ${token}`
     }
 
     // Log des requêtes en mode développement
@@ -53,8 +52,9 @@ apiClient.interceptors.response.use(
 
     return response
   },
-  (error) => {
+  async (error) => {
     const toast = useToast()
+    const originalRequest = error.config;
 
     // Log des erreurs
     console.error('❌ API Error:', {
@@ -86,19 +86,57 @@ apiClient.interceptors.response.use(
           break
 
         case 401:
-          // Non autorisé - rediriger vers la page de connexion
-          toast.error('Session expirée. Veuillez vous reconnecter.')
-          localStorage.removeItem('auth_token')
+          // Non autorisé - tenter de rafraîchir le token
+          const refreshToken = localStorage.getItem('refresh_token');
           
-          // Redirection vers login (si on n'y est pas déjà)
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login'
+          if (refreshToken && !originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            try {
+              // Tenter de rafraîchir le token
+              const refreshResponse = await axios.post('/api/token/refresh/', {
+                refresh: refreshToken
+              });
+              
+              const { access } = refreshResponse.data;
+              localStorage.setItem('access_token', access);
+              
+              // Réessayer la requête originale avec le nouveau token
+              originalRequest.headers.Authorization = `Bearer ${access}`;
+              return apiClient(originalRequest);
+              
+            } catch (refreshError) {
+              // Si le refresh échoue, déconnecter l'utilisateur
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              toast.error('Session expirée. Veuillez vous reconnecter.');
+              
+              // Redirection vers login (si on n'y est pas déjà)
+              if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+              }
+            }
+          } else {
+            // Si pas de refresh token ou déjà tenté, déconnecter
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            toast.error('Session expirée. Veuillez vous reconnecter.');
+            
+            // Redirection vers login (si on n'y est pas déjà)
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login';
+            }
           }
           break
 
         case 403:
           // Accès interdit
           toast.error('Accès interdit. Vous n\'avez pas les permissions nécessaires.')
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
           break
 
         case 404:

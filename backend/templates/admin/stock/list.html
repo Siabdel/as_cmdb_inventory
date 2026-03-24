@@ -1,6 +1,8 @@
-<!-- templates/admin/stock/list.html -->
+<!-- templates/admin/stock/list.html - Vue.js 3 (sans Composition API) -->
 {% extends 'admin_base.html' %}
 {% load static %}
+{% load custom_filters %}
+
 
 {% block title %}Stock Atelier - CMDB{% endblock %}
 
@@ -9,52 +11,78 @@
 {% endblock %}
 
 {% block content %}
-<div id="stock-app">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">📦 Stock Atelier</h2>
-            <p class="text-muted mb-0">[[ totalItems ]] articles • [[ totalValue | currency ]] de valeur</p>
+            <p class="text-muted mb-0">
+                <span>{{ stock_items|length }} articles</span>
+            </p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-light" @click="exportStock">
-                📥 Export CSV
+            <button class="btn btn-outline-light" onclick="location.reload()">
+                🔄 Actualiser
             </button>
-            <button class="btn btn-primary" @click="showAddItemModal = true" style="background: #2563eb; border:none;">
+            <a href="/django-admin/stock/stockitem/add/" class="btn btn-primary" style="background: #2563eb; border:none;">
                 ➕ Nouvel Article
-            </button>
+            </a>
         </div>
     </div>
 
     <!-- Alert Banner -->
-    <div class="stock-alert-banner" v-if="criticalStockCount > 0">
+    {% with out_of_stock=0 low_stock=0 %}
+    {% for item in stock_items %}
+        {% if item.quantity == 0 %}
+            {% with out_of_stock=out_of_stock|add:1 %}
+            {% endwith %}
+        {% endif %}
+        {% if item.quantity > 0 and item.quantity <= item.min_quantity %}
+            {% with low_stock=low_stock|add:1 %}
+            {% endwith %}
+        {% endif %}
+    {% endfor %}
+    {% endwith %}
+    {% if out_of_stock > 0 %}
+    <div class="stock-alert-banner">
         <span class="stock-alert-icon">⚠️</span>
         <div class="stock-alert-content">
-            <h5 class="text-danger">[[ criticalStockCount ]] article(s) en rupture de stock</h5>
+            <h5 class="text-danger">{{ out_of_stock }} article(s) en rupture de stock</h5>
             <p>Commandez immédiatement pour éviter les retards de maintenance</p>
         </div>
-        <button class="btn btn-danger btn-sm" @click="filterByStockLevel('critical')">
+        <button class="btn btn-danger btn-sm" onclick="location.reload()">
             Voir les ruptures
         </button>
     </div>
-
-    <div class="stock-alert-banner warning" v-if="lowStockCount > 0 && criticalStockCount === 0">
+    {% endif %}
+    {% if low_stock > 0 and out_of_stock == 0 %}
+    <div class="stock-alert-banner warning">
         <span class="stock-alert-icon">🟠</span>
         <div class="stock-alert-content">
-            <h5 class="text-warning">[[ lowStockCount ]] article(s) sous le seuil minimum</h5>
+            <h5 class="text-warning">{{ low_stock }} article(s) sous le seuil minimum</h5>
             <p>Pensez à commander avant rupture</p>
         </div>
-        <button class="btn btn-warning btn-sm" @click="filterByStockLevel('low')">
+        <button class="btn btn-warning btn-sm" onclick="location.reload()">
             Voir les alertes
         </button>
     </div>
+    {% endif %}
 
     <!-- KPI Cards -->
+    {% with total_items=0 total_value=0 low_stock=0 out_of_stock=0 %}
+    {% for item in stock_items %}
+        {% add total_items 1 as total_items %}
+        {% multiply item.quantity item.unit_price as item_value %}
+        {% add total_value item_value as total_value %}
+        {% if item.quantity == 0 %}{% add out_of_stock 1 as out_of_stock %}{% endif %}
+        {% if item.quantity > 0 and item.quantity <= item.min_quantity %}{% add low_stock 1 as low_stock %}{% endif %}
+    {% endfor %}
+    {% endwith %}
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="kpi-card">
                 <div class="kpi-icon blue">📦</div>
                 <div>
-                    <div class="kpi-value">[[ totalItems ]]</div>
+                    <div class="kpi-value">{{ total_items }}</div>
                     <div class="kpi-label">Total Articles</div>
                 </div>
             </div>
@@ -63,7 +91,7 @@
             <div class="kpi-card">
                 <div class="kpi-icon green">✅</div>
                 <div>
-                    <div class="kpi-value">[[ okStockCount ]]</div>
+                    <div class="kpi-value">{{ total_items|subtract:low_stock|subtract:out_of_stock }}</div>
                     <div class="kpi-label">Stock OK</div>
                 </div>
             </div>
@@ -72,7 +100,7 @@
             <div class="kpi-card">
                 <div class="kpi-icon amber">⚠️</div>
                 <div>
-                    <div class="kpi-value">[[ lowStockCount ]]</div>
+                    <div class="kpi-value">{{ low_stock }}</div>
                     <div class="kpi-label">Stock Critique</div>
                 </div>
             </div>
@@ -81,7 +109,7 @@
             <div class="kpi-card">
                 <div class="kpi-icon red">🔴</div>
                 <div>
-                    <div class="kpi-value">[[ criticalStockCount ]]</div>
+                    <div class="kpi-value">{{ out_of_stock }}</div>
                     <div class="kpi-label">Rupture</div>
                 </div>
             </div>
@@ -92,21 +120,21 @@
     <div class="quick-stock-actions">
         <h6>⚡ Actions Rapides</h6>
         <div class="action-button-grid">
-            <div class="action-button" @click="showEntryModal = true">
+            <div class="action-button" data-bs-toggle="modal" data-bs-target="#entryModal">
                 <i class="text-success">📥</i>
                 <div>
                     <div class="fw-bold">Entrée de Stock</div>
                     <small class="text-muted">Ajouter des articles</small>
                 </div>
             </div>
-            <div class="action-button" @click="showExitModal = true">
+            <div class="action-button" data-bs-toggle="modal" data-bs-target="#exitModal">
                 <i class="text-danger">📤</i>
                 <div>
                     <div class="fw-bold">Sortie de Stock</div>
                     <small class="text-muted">Lier à un ticket</small>
                 </div>
             </div>
-            <div class="action-button" @click="showInventoryModal = true">
+            <div class="action-button" data-bs-toggle="modal" data-bs-target="#inventoryModal">
                 <i class="text-primary">📋</i>
                 <div>
                     <div class="fw-bold">Inventaire</div>
@@ -128,50 +156,28 @@
         <div class="row g-3">
             <div class="col-md-3">
                 <input type="text" class="form-control bg-dark border-secondary text-white"
-                       placeholder="Rechercher (réf, nom...)" v-model="filters.search" @input="debounceSearch">
+                       placeholder="Rechercher (réf, nom...)" id="searchInput">
             </div>
             <div class="col-md-2">
-                <select class="form-select bg-dark border-secondary text-white" v-model="filters.category">
-                    <option value="">Toutes catégories</option>
-                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                        [[ cat.name ]]
-                    </option>
+                <select class="form-select bg-dark border-secondary text-white" id="filterType">
+                    <option value="">Tous types</option>
+                    <option value="spare_part">Pièce détachée</option>
+                    <option value="consumable">Consommable</option>
+                    <option value="accessory">Accessoire</option>
+                    <option value="tool">Outil</option>
                 </select>
             </div>
             <div class="col-md-2">
-                <select class="form-select bg-dark border-secondary text-white" v-model="filters.stockLevel">
+                <select class="form-select bg-dark border-secondary text-white" id="filterStockLevel">
                     <option value="">Tous niveaux</option>
                     <option value="ok">🟢 OK</option>
                     <option value="low">🟠 Critique</option>
                     <option value="critical">🔴 Rupture</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <select class="form-select bg-dark border-secondary text-white" v-model="filters.type">
-                    <option value="">Tous types</option>
-                    <option value="component">Composant</option>
-                    <option value="accessory">Accessoire</option>
-                    <option value="consumable">Consommable</option>
-                    <option value="tool">Outillage</option>
-                </select>
-            </div>
             <div class="col-md-3 text-end">
-                <button class="btn btn-outline-secondary" @click="resetFilters">🔄 Reset</button>
+                <button class="btn btn-outline-secondary" id="resetFiltersBtn">🔄 Reset</button>
             </div>
-        </div>
-
-        <!-- Category Chips -->
-        <div class="category-chips mt-3" v-if="categories.length > 0">
-            <span class="category-chip" :class="{ active: filters.category === '' }" @click="filters.category = ''">
-                Tous
-            </span>
-            <span class="category-chip" 
-                  v-for="cat in categories" 
-                  :key="cat.id"
-                  :class="{ active: filters.category === cat.id }"
-                  @click="filters.category = cat.id">
-                [[ cat.name ]]
-            </span>
         </div>
     </div>
 
@@ -181,13 +187,12 @@
             <thead>
                 <tr>
                     <th width="50">
-                        <input type="checkbox" class="form-check-input" @change="toggleSelectAll" :checked="selectAll">
+                        <input type="checkbox" class="form-check-input" id="selectAllCheckbox">
                     </th>
-                    <th @click="sortBy('reference')">Référence [[ sortOrder.reference ]]</th>
-                    <th @click="sortBy('name')">Nom [[ sortOrder.name ]]</th>
-                    <th>Catégorie</th>
+                    <th>Référence</th>
+                    <th>Nom</th>
                     <th>Type</th>
-                    <th @click="sortBy('quantity')">Stock [[ sortOrder.quantity ]]</th>
+                    <th>Stock</th>
                     <th>Seuil Min</th>
                     <th>Prix Unit.</th>
                     <th>Valeur Totale</th>
@@ -195,243 +200,246 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="item in filteredItems" :key="item.id" 
-                    :class="{ 'row-low-stock': isLowStock(item) }">
+                {% for item in stock_items %}
+                <tr {% if item.quantity > 0 and item.quantity <= item.min_quantity %}class="row-low-stock"{% endif %}>
                     <td data-label="Select">
-                        <input type="checkbox" class="form-check-input" 
-                               v-model="selectedItems" :value="item.id">
+                        <input type="checkbox" class="form-check-input" value="{{ item.id }}">
                     </td>
                     <td data-label="Référence">
-                        <code class="text-accent">[[ item.reference ]]</code>
+                        <code class="text-accent">{{ item.reference }}</code>
                     </td>
                     <td data-label="Nom">
                         <div class="d-flex align-items-center">
-                            <img :src="item.photo || '/static/admin_cmdb/img/no-image.png'" 
-                                 class="item-thumb me-2" alt="[[ item.name ]]">
+                            <img src="{{ item.photo|default:'/static/admin_cmdb/img/no-image.png' }}"
+                                 class="item-thumb me-2" alt="{{ item.name }}" width="40" height="40">
                             <div>
-                                <div class="fw-bold">[[ item.name ]]</div>
-                                <small class="text-muted" v-if="item.manufacturer">[[ item.manufacturer ]]</small>
+                                <div class="fw-bold">{{ item.name }}</div>
+                                <small class="text-muted">{{ item.brand.name|default:'' }}</small>
                             </div>
                         </div>
                     </td>
-                    <td data-label="Catégorie">
-                        <span class="badge bg-secondary">[[ item.category_name || '-' ]]</span>
-                    </td>
                     <td data-label="Type">
-                        <span class="badge bg-info">[[ getTypeLabel(item.type) ]]</span>
-                    </td>
-                    <td data-label="Stock">
-                        <span class="stock-badge" :class="getStockLevelClass(item)">
-                            <span class="stock-indicator"></span>
-                            [[ item.quantity ]]
+                        <span class="badge bg-info">
+                            {% if item.item_type == 'spare_part' %}Pièce détachée
+                            {% elif item.item_type == 'consumable' %}Consommable
+                            {% elif item.item_type == 'accessory' %}Accessoire
+                            {% elif item.item_type == 'tool' %}Outil
+                            {% else %}{{ item.item_type }}
+                            {% endif %}
                         </span>
                     </td>
-                    <td data-label="Seuil Min">[[ item.min_stock ]]</td>
-                    <td data-label="Prix Unit.">[[ formatCurrency(item.unit_price) ]]</td>
+                    <td data-label="Stock">
+                        <span class="stock-badge {% if item.quantity == 0 %}stock-critical{% elif item.quantity <= item.min_quantity %}stock-low{% else %}stock-ok{% endif %}">
+                            <span class="stock-indicator"></span>
+                            {{ item.quantity }}
+                        </span>
+                    </td>
+                    <td data-label="Seuil Min">{{ item.min_quantity }}</td>
+                    <td data-label="Prix Unit.">{{ item.unit_price|floatformat:2 }} €</td>
                     <td data-label="Valeur Totale">
-                        <div>[[ formatCurrency(item.total_value) ]]</div>
+                        <div>{{ item.quantity|multiply:item.unit_price|floatformat:2 }} €</div>
                         <div class="stock-value-bar">
-                            <div class="stock-value-fill" :style="{ width: getStockValuePercent(item) + '%' }"></div>
+                            <div class="stock-value-fill" :style="{width: calculateValueWidth(item.quantity * item.unit_price) + '%' }"></div>
                         </div>
                     </td>
                     <td data-label="Actions">
                         <div class="btn-group btn-group-sm">
-                            <a :href="'/admin/stock/' + item.id + '/'" class="btn btn-outline-light">
-                                👁️
-                            </a>
-                            <button class="btn btn-outline-success" @click="openEntryModal(item)" title="Entrée">
-                                📥
-                            </button>
-                            <button class="btn btn-outline-danger" @click="openExitModal(item)" title="Sortie">
-                                📤
-                            </button>
+                            <a href="/admin/stock/{{ item.id }}/" class="btn btn-outline-light">👁️</a>
+                            <button class="btn btn-outline-success" onclick="showEntryModal({{ item.id }})">📥</button>
+                            <button class="btn btn-outline-danger" onclick="showExitModal({{ item.id }})">📤</button>
                         </div>
                     </td>
                 </tr>
-                <tr v-if="filteredItems.length === 0">
-                    <td colspan="10" class="text-center py-5 text-muted">
-                        Aucun article trouvé
-                    </td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- Pagination -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <span class="text-muted">Page [[ currentPage ]] sur [[ totalPages ]] • [[ filteredItems.length ]] articles</span>
-        <nav>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                    <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Précédent</a>
-                </li>
-                <li class="page-item" v-for="page in visiblePages" :key="page" 
-                    :class="{ active: page === currentPage }">
-                    <a class="page-link" href="#" @click.prevent="changePage(page)">[[ page ]]</a>
-                </li>
-                <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                    <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Suivant</a>
-                </li>
-            </ul>
-        </nav>
-    </div>
-
     <!-- Entry Modal -->
-    <div class="modal fade" id="entryModal" tabindex="-1" v-show="showEntryModal">
+    <div class="modal fade" id="entryModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content stock-modal-content">
                 <div class="modal-header stock-modal-header border-secondary">
                     <h5 class="modal-title">📥 Entrée de Stock</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="showEntryModal = false"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body stock-modal-body">
-                    <div class="mb-3" v-if="entryItem">
+                    <div class="mb-3">
                         <label class="form-label text-muted">Article</label>
-                        <input type="text" class="form-control bg-dark border-secondary text-white" 
-                               :value="entryItem.name" readonly>
-                    </div>
-                    <div class="mb-3" v-else>
-                        <label class="form-label text-muted">Article</label>
-                        <select class="form-select bg-dark border-secondary text-white" v-model="entryItemId">
+                        <select class="form-select bg-dark border-secondary text-white" id="entryItemId">
                             <option value="">Sélectionner un article</option>
-                            <option v-for="item in items" :key="item.id" :value="item.id">
-                                [[ item.name ]] ([[ item.reference ]])
+                            {% for item in stock_items %}
+                            <option value="{{ item.id }}">
+                                {{ item.name }} ({{ item.reference }})
                             </option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted">Quantité</label>
                         <input type="number" class="form-control bg-dark border-secondary text-white" 
-                               v-model="entryQuantity" min="1" placeholder="0">
+                            id="entryQuantity" min="1" placeholder="0">
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted">Commentaire (optionnel)</label>
                         <textarea class="form-control bg-dark border-secondary text-white" 
-                                  v-model="entryComment" rows="2" placeholder="Référence commande, fournisseur..."></textarea>
+                                id="entryComment" rows="2" placeholder="Référence commande, fournisseur..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer stock-modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @click="showEntryModal = false">Annuler</button>
-                    <button type="button" class="btn btn-success" @click="submitEntry">Confirmer Entrée</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success">Confirmer Entrée</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Exit Modal -->
-    <div class="modal fade" id="exitModal" tabindex="-1" v-show="showExitModal">
+<!-- Exit Modal -->
+    <div class="modal fade" id="exitModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content stock-modal-content">
                 <div class="modal-header stock-modal-header border-secondary">
                     <h5 class="modal-title">📤 Sortie de Stock</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="showExitModal = false"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body stock-modal-body">
-                    <div class="mb-3" v-if="exitItem">
+                    <div class="mb-3">
                         <label class="form-label text-muted">Article</label>
-                        <input type="text" class="form-control bg-dark border-secondary text-white" 
-                               :value="exitItem.name" readonly>
-                    </div>
-                    <div class="mb-3" v-else>
-                        <label class="form-label text-muted">Article</label>
-                        <select class="form-select bg-dark border-secondary text-white" v-model="exitItemId">
+                        <select class="form-select bg-dark border-secondary text-white" id="exitItemId">
                             <option value="">Sélectionner un article</option>
-                            <option v-for="item in items" :key="item.id" :value="item.id">
-                                [[ item.name ]] (Stock: [[ item.quantity ]])
+                            {% for item in stock_items %}
+                            <option value="{{ item.id }}">
+                                {{ item.name }} (Stock: {{ item.quantity }})
                             </option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted">Quantité</label>
                         <input type="number" class="form-control bg-dark border-secondary text-white" 
-                               v-model="exitQuantity" min="1" :max="exitItem ? exitItem.quantity : 999" placeholder="0">
+                            id="exitQuantity" min="1" max="999" placeholder="0">
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted">Lier à un ticket (optionnel)</label>
-                        <select class="form-select bg-dark border-secondary text-white" v-model="exitTicketId">
+                        <select class="form-select bg-dark border-secondary text-white" id="exitTicketId">
                             <option value="">Aucun ticket</option>
-                            <option v-for="ticket in openTickets" :key="ticket.id" :value="ticket.id">
-                                #[[ ticket.id ]] - [[ ticket.subject ]]
-                            </option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-muted">Commentaire</label>
                         <textarea class="form-control bg-dark border-secondary text-white" 
-                                  v-model="exitComment" rows="2" placeholder="Raison de la sortie..."></textarea>
+                                id="exitComment" rows="2" placeholder="Raison de la sortie..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer stock-modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @click="showExitModal = false">Annuler</button>
-                    <button type="button" class="btn btn-danger" @click="submitExit">Confirmer Sortie</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger">Confirmer Sortie</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Add Item Modal -->
-    <div class="modal fade" id="addItemModal" tabindex="-1" v-show="showAddItemModal">
+<!-- Inventory Modal -->
+    <div class="modal fade" id="inventoryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content stock-modal-content">
+                <div class="modal-header stock-modal-header border-secondary">
+                    <h5 class="modal-title">📋 Ajustement de Stock</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body stock-modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Article</label>
+                        <select class="form-select bg-dark border-secondary text-white" id="inventoryItemId">
+                            <option value="">Sélectionner un article</option>
+                            {% for item in stock_items %}
+                            <option value="{{ item.id }}">
+                                {{ item.name }} (Stock: {{ item.quantity }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Quantité</label>
+                        <input type="number" class="form-control bg-dark border-secondary text-white" 
+                            id="inventoryQuantity" min="0" placeholder="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Commentaire</label>
+                        <textarea class="form-control bg-dark border-secondary text-white" 
+                                id="inventoryComment" rows="2" placeholder="Raison de l'ajustement..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer stock-modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary">Confirmer Ajustement</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Add Item Modal -->
+    <div class="modal fade" id="addItemModal" ref="addItemModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content stock-modal-content">
                 <div class="modal-header stock-modal-header border-secondary">
                     <h5 class="modal-title">➕ Nouvel Article</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="showAddItemModal = false"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body stock-modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label text-muted">Référence *</label>
-                            <input type="text" class="form-control bg-dark border-secondary text-white" 
-                                   v-model="newItem.reference" placeholder="REF-001">
+                            <input type="text" class="form-control bg-dark border-secondary text-white"
+                                id="newItemReference" placeholder="REF-001">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Nom *</label>
-                            <input type="text" class="form-control bg-dark border-secondary text-white" 
-                                   v-model="newItem.name" placeholder="Nom de l'article">
+                            <input type="text" class="form-control bg-dark border-secondary text-white"
+                                id="newItemName" placeholder="Nom de l'article">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted">Catégorie</label>
-                            <select class="form-select bg-dark border-secondary text-white" v-model="newItem.category">
-                                <option value="">Sélectionner</option>
-                                <option v-for="cat in categories" :key="cat.id" :value="cat.id">[[ cat.name ]]</option>
+                            <label class="form-label text-muted">Marque</label>
+                            <select class="form-select bg-dark border-secondary text-white" id="newItemBrand">
+                                <option value="">Sélectionner une marque</option>
+                                {% for brand in brands %}
+                                <option value="{{ brand.id }}">{{ brand.name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted">Type</label>
-                            <select class="form-select bg-dark border-secondary text-white" v-model="newItem.type">
-                                <option value="component">Composant</option>
-                                <option value="accessory">Accessoire</option>
+                            <select class="form-select bg-dark border-secondary text-white" id="newItemType">
+                                <option value="spare_part">Pièce détachée</option>
                                 <option value="consumable">Consommable</option>
-                                <option value="tool">Outillage</option>
+                                <option value="accessory">Accessoire</option>
+                                <option value="tool">Outil</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">Stock Initial</label>
-                            <input type="number" class="form-control bg-dark border-secondary text-white" 
-                                   v-model="newItem.quantity" min="0" value="0">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Quantité initiale</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white"
+                                id="newItemQuantity" min="0" value="0">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">Seuil Minimum</label>
-                            <input type="number" class="form-control bg-dark border-secondary text-white" 
-                                   v-model="newItem.min_stock" min="1" value="5">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Seuil minimum</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white"
+                                id="newItemMinStock" min="0" value="5">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted">Prix Unit. (€)</label>
-                            <input type="number" class="form-control bg-dark border-secondary text-white" 
-                                   v-model="newItem.unit_price" min="0" step="0.01" value="0">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Prix unitaire (€)</label>
+                            <input type="number" class="form-control bg-dark border-secondary text-white"
+                                id="newItemUnitPrice" min="0" step="0.01" value="0.00">
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer stock-modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" @click="showAddItemModal = false">Annuler</button>
-                    <button type="button" class="btn btn-primary" @click="submitNewItem">Créer l'Article</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" id="createNewItemBtn">Créer Article</button>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'admin_cmdb/js/stock.js' %}"></script>
+</div>
 {% endblock %}

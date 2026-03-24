@@ -5,10 +5,14 @@ from django.shortcuts import render
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
+
+from rest_framework.authentication import SessionAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import MaintenanceTicket, TicketPart, TicketComment
 from .serializers import (
@@ -18,16 +22,22 @@ from .serializers import (
 )
 
 
+# backend/maintenance/views.py
+
 class MaintenanceTicketViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    filter_backends    = [DjangoFilterBackend, filters.SearchFilter,
-                          filters.OrderingFilter]
-    filterset_fields   = ['status', 'priority', 'ticket_type',
-                          'asset', 'assigned_tech']
-    search_fields      = ['ticket_number', 'title', 'description',
-                          'asset__name', 'asset__serial_number']
-    ordering_fields    = ['created_at', 'due_date', 'priority']
-    ordering           = ['-created_at']
+    """
+    ViewSet pour la gestion des tickets de maintenance.
+    """
+    # ── Authentification & Permissions ─────────────────────
+    authentication_classes = [JWTAuthentication, SessionAuthentication]
+    ##permission_classes = [IsAuthenticated or IsAdminUser]
+    
+    # ── Filtrage & Recherche ───────────────────────────────
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'priority', 'ticket_type', 'asset', 'assigned_tech']
+    search_fields = ['ticket_number', 'title', 'description', 'asset__name', 'asset__serial_number']
+    ordering_fields = ['created_at', 'due_date', 'priority']
+    ordering = ['-created_at']
 
     def get_queryset(self):
         return MaintenanceTicket.objects.select_related('asset').prefetch_related(
@@ -40,31 +50,101 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
         return TicketDetailSerializer
 
     # ── Transition de statut ────────────────────────────────
-
-    @action(detail=True, methods=['post'], url_path='transition')
+    @action(
+        detail=True,
+        methods=['POST', 'GET', 'PATCH'],
+        url_path='transition',
+        authentication_classes=[JWTAuthentication, SessionAuthentication],
+        permission_classes=[IsAuthenticated]
+    )
     def transition(self, request, pk=None):
         """
         Effectue une transition de statut contrôlée.
         Body: { "new_status": "in_progress", "changed_by": "tech01", "notes": "..." }
         """
         ticket = self.get_object()
+        
+        if request.method == 'GET':
+            # Retourne les statuts possibles pour ce ticket
+            return Response({
+                'current_status': ticket.status,
+                'allowed_transitions': ticket.get_allowed_transitions()
+            })
+        
+        # Vérification supplémentaire de l'autorisation de transition
+        if not ticket.can_transition_to(request.data.get('new_status')):
+            return Response({
+                'error': 'Transition non autorisée',
+                'allowed_transitions': ticket.get_allowed_transitions()
+            }, status=403)
+        
+        # Vérification que l'utilisateur a le droit de faire cette transition
+        # (facultatif - l'authentification est déjà gérée)
+        if not request.user.is_authenticated:
+            return Response({
+                'error': 'Utilisateur non authentifié'
+            }, status=401)
+        
         serializer = TicketTransitionSerializer(
             data=request.data,
-            context={'ticket': ticket}
+            context={'ticket': ticket, 'request': request}
         )
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
 
         ticket.transition_to(
             new_status=d['new_status'],
-            user=d.get('changed_by', request.user.username),
+            user=request.user.username,
+            notes=d.get('notes', ''),
+        )
+        return Response(TicketDetailSerializer(ticket).data)
+
+    # ── Autres actions (assign, resolve, close, cancel...) ──
+    # ... (reste de votre code)
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TicketListSerializer
+        return TicketDetailSerializer
+
+    # ── Transition de statut ────────────────────────────────
+
+    @action(
+        detail=True,
+        methods=['POST', 'GET', 'PATCH'],
+        url_path='transition',
+        permission_classes=[IsAuthenticated]
+    )
+    def transition(self, request, pk=None):
+        """
+        Effectue une transition de statut contrôlée.
+        Body: { "new_status": "in_progress", "changed_by": "tech01", "notes": "..." }
+        """
+        ticket = self.get_object()
+        if request.method == 'GET':
+            # Retourne les statuts possibles pour ce ticket
+            # Pour simplifier, on retourne tous les statuts possibles
+            return Response({
+                'current_status': ticket.status,
+                'allowed_transitions': ['OPEN', 'IN_PROGRESS', 'CLOSED', 'CANCELLED']
+            })
+        
+        serializer = TicketTransitionSerializer(
+            data=request.data,
+            context={'ticket': ticket, 'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        d = serializer.validated_data
+
+        ticket.transition_to(
+            new_status=d['new_status'],
+            user=request.user.username,
             notes=d.get('notes', ''),
         )
         return Response(TicketDetailSerializer(ticket).data)
 
     # ── Actions rapides ─────────────────────────────────────
 
-    @action(detail=True, methods=['post'], url_path='assign')
+    @action(detail=True, methods=['POST'], url_path='assign')
     def assign(self, request, pk=None):
         """Assigner un technicien et passer en statut 'assigned'."""
         ticket = self.get_object()
@@ -77,7 +157,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
                              notes=f"Assigné à {tech}")
         return Response(TicketDetailSerializer(ticket).data)
 
-    @action(detail=True, methods=['post'], url_path='resolve')
+    @action(detail=True, methods=['POST'], url_path='resolve')
     def resolve(self, request, pk=None):
         """Résoudre un ticket avec notes de résolution."""
         ticket = self.get_object()
@@ -88,14 +168,14 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
         ticket.transition_to('resolved', user=request.user.username, notes=notes)
         return Response(TicketDetailSerializer(ticket).data)
 
-    @action(detail=True, methods=['post'], url_path='close')
+    @action(detail=True, methods=['POST'], url_path='close')
     def close(self, request, pk=None):
         ticket = self.get_object()
         ticket.transition_to('closed', user=request.user.username,
                              notes=request.data.get('notes', ''))
         return Response(TicketDetailSerializer(ticket).data)
 
-    @action(detail=True, methods=['post'], url_path='cancel')
+    @action(detail=True, methods=['POST'], url_path='cancel')
     def cancel(self, request, pk=None):
         ticket = self.get_object()
         ticket.transition_to('cancelled', user=request.user.username,
@@ -104,7 +184,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
 
     # ── Commentaires ────────────────────────────────────────
 
-    @action(detail=True, methods=['get', 'post'], url_path='comments')
+    @action(detail=True, methods=['GET', 'POST'], url_path='comments')
     def comments(self, request, pk=None):
         ticket = self.get_object()
         if request.method == 'GET':
@@ -117,7 +197,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
 
     # ── Pièces ──────────────────────────────────────────────
 
-    @action(detail=True, methods=['get', 'post'], url_path='parts')
+    @action(detail=True, methods=['GET', 'POST'], url_path='parts')
     def parts(self, request, pk=None):
         ticket = self.get_object()
         if request.method == 'GET':
@@ -129,7 +209,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
 
     # ── Listes filtrées ─────────────────────────────────────
 
-    @action(detail=False, methods=['get'], url_path='overdue')
+    @action(detail=False, methods=['GET'], url_path='overdue')
     def overdue(self, request):
         """Tickets en retard (due_date dépassée, non clôturés)."""
         qs = self.get_queryset().filter(
@@ -137,7 +217,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
         ).exclude(status__in=['resolved', 'closed', 'cancelled'])
         return Response(TicketListSerializer(qs, many=True).data)
 
-    @action(detail=False, methods=['get'], url_path='open')
+    @action(detail=False, methods=['GET'], url_path='open')
     def open_tickets(self, request):
         """Tickets actifs (hors resolved/closed/cancelled)."""
         qs = self.get_queryset().exclude(
@@ -145,7 +225,7 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
         )
         return Response(TicketListSerializer(qs, many=True).data)
 
-    @action(detail=False, methods=['get'], url_path='stats')
+    @action(detail=False, methods=['GET'], url_path='stats')
     def stats(self, request):
         """KPIs tickets pour dashboard."""
         qs = MaintenanceTicket.objects.all()
@@ -159,10 +239,10 @@ class MaintenanceTicketViewSet(viewsets.ModelViewSet):
             'cancelled':      qs.filter(status='cancelled').count(),
             'critical':       qs.filter(priority='critical').count(),
             'overdue':        qs.filter(
-                                  due_date__lt=timezone.now().date()
-                              ).exclude(
-                                  status__in=['resolved', 'closed', 'cancelled']
-                              ).count(),
+                                   due_date__lt=timezone.now().date()
+                               ).exclude(
+                                   status__in=['resolved', 'closed', 'cancelled']
+                               ).count(),
             'total_labor_cost': qs.aggregate(v=Sum('labor_cost'))['v'] or 0,
         }
         return Response(data)

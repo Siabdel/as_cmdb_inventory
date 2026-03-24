@@ -1,7 +1,4 @@
 from django.contrib import admin
-
-# Register your models here.
-from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Sum, F
 from django.utils import timezone
@@ -101,3 +98,34 @@ def export_with_quantities(modeladmin, request, queryset):
         ])
 
     return response
+
+
+# ══════════════════════════════════════════════════════════
+# ADMIN — Enregistrement des modèles
+# ══════════════════════════════════════════════════════════
+
+@admin.register(StockItem)
+class StockItemAdmin(admin.ModelAdmin):
+    list_display = ['name', 'reference', 'item_type', 'brand', 'quantity', 'min_quantity', 'unit_price', 'total_value']
+    list_filter = ['item_type', 'brand', 'quantity', StockLevelFilter]
+    search_fields = ['name', 'reference']
+    ordering = ['name']
+    inlines = [StockMovementInline]
+    actions = [restock_to_minimum, export_with_quantities]
+
+
+@admin.register(StockMovement)
+class StockMovementAdmin(admin.ModelAdmin):
+    list_display = ['item', 'movement_type', 'quantity_display', 'reason', 'done_by', 'created_at']
+    list_filter = ['movement_type', 'created_at']
+    search_fields = ['item__name', 'reason']
+    ordering = ['-created_at']
+
+    def quantity_display(self, obj):
+        color = '#2ecc71' if obj.quantity > 0 else '#e74c3c'
+        sign  = '+' if obj.quantity > 0 else ''
+        return format_html(
+            '<span style="color:{};font-weight:bold">{}{}</span>',
+            color, sign, obj.quantity
+        )
+    quantity_display.short_description = 'Qté'

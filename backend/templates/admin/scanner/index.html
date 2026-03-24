@@ -21,8 +21,30 @@
         </div>
     </div>
 
+    <!-- Scanner Type Selection -->
+    <div class="scanner-type-selector mb-4">
+        <div class="btn-group" role="group">
+            <button
+                type="button"
+                class="btn btn-outline-primary"
+                :class="{ active: scannerType === 'webcam' }"
+                @click="scannerType = 'webcam'"
+            >
+                Caméra Web
+            </button>
+            <button
+                type="button"
+                class="btn btn-outline-success"
+                :class="{ active: scannerType === 'usb' }"
+                @click="scannerType = 'usb'"
+            >
+                Scanner USB
+            </button>
+        </div>
+    </div>
+
     <!-- Camera View -->
-    <div class="camera-wrapper" v-show="cameraActive">
+    <div class="camera-wrapper" v-show="cameraActive && scannerType === 'webcam'">
         <video id="camera-preview" autoplay playsinline></video>
         <div id="scan-overlay">
             <div class="scan-frame">
@@ -31,8 +53,16 @@
         </div>
     </div>
 
+    <!-- USB Scanner Instructions -->
+    <div class="usb-scanner-instructions card-cmdb" v-if="scannerType === 'usb' && !scanResult">
+        <i class="bi bi-keyboard"></i>
+        <h4 class="text-white mb-3">Scanner USB Honeywell</h4>
+        <p class="text-muted mb-4">Connectez votre scanner USB Honeywell et scannez directement les QR codes</p>
+        <p class="text-muted mb-4">Les scanners Honeywell émulent le clavier, vous pouvez scanner directement dans le champ ci-dessous</p>
+    </div>
+
     <!-- Permission Request -->
-    <div class="camera-permission card-cmdb" v-if="!cameraActive && !scanResult">
+    <div class="camera-permission card-cmdb" v-if="!cameraActive && !scanResult && scannerType === 'webcam'">
         <i class="bi bi-camera"></i>
         <h4 class="text-white mb-3">Accès caméra requis</h4>
         <p class="text-muted mb-4">Autorisez l'accès à la caméra pour scanner les QR codes</p>
@@ -42,7 +72,7 @@
     </div>
 
     <!-- Scanner Controls -->
-    <div class="scanner-controls" v-if="cameraActive">
+    <div class="scanner-controls" v-if="cameraActive && scannerType === 'webcam'">
         <button class="btn btn-scan btn-scan-primary" @click="toggleCamera">
             [[ cameraActive ? '⏸️ Pause' : '▶️ Reprendre' ]]
         </button>
@@ -89,15 +119,15 @@
 
         <!-- Quick Actions -->
         <div class="quick-actions">
-            <a :href="'/admin/tickets/new/?asset=' + scanResult.id" class="quick-action-btn">
+            <a href="#" class="quick-action-btn" :disabled="!scanResult">
                 <i>🔧</i>
                 <span>Créer Ticket</span>
             </a>
-            <a :href="'/admin/assets/' + scanResult.id + '/'" class="quick-action-btn">
+            <a href="#" class="quick-action-btn" :disabled="!scanResult">
                 <i>👁️</i>
                 <span>Voir Fiche</span>
             </a>
-            <button class="quick-action-btn" @click="showMoveModal = true">
+            <button class="quick-action-btn" @click="showMoveModal = true" :disabled="!scanResult">
                 <i>📍</i>
                 <span>Déplacer</span>
             </button>
@@ -109,19 +139,19 @@
     </div>
 
     <!-- Scan History -->
-    <div class="scan-history" v-if="scanHistory.length > 0">
+    <!-- <div class="scan-history" v-if="scanHistory.length > 0">
         <h6>📜 Historique des scans</h6>
-        <div class="scan-history-item" 
-             v-for="(scan, index) in scanHistory" 
+        <div class="scan-history-item"
+             v-for="(scan, index) in scanHistory"
              :key="index"
-             @click="loadScanResult(scan.uuid)">
+             @click="loadScanFromHistory(scan)">
             <div>
-                <div class="text-white">[[ scan.asset_name ]]</div>
-                <small class="text-muted">[[ formatDate(scan.scanned_at) ]]</small>
+                <div class="text-white">[[ scan?.asset_name || 'Asset sans nom' ]]</div>
+                <small class="text-muted">[[ formatDate(scan?.scanned_at || '-') ]]</small>
             </div>
             <i class="bi bi-chevron-right text-muted"></i>
         </div>
-    </div>
+    </div> -->
 
     <!-- Manual Search Modal -->
     <div class="modal fade" id="manualSearchModal" tabindex="-1" v-show="showManualSearch">
@@ -163,7 +193,7 @@
                 <div class="modal-body">
                     <select class="form-select bg-dark border-secondary text-white" v-model="moveLocation">
                         <option value="">Sélectionner une localisation</option>
-                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                        <option v-for="loc in locations" :key="loc?.id" :value="loc?.id" v-if="loc">
                             [[ loc.name ]]
                         </option>
                     </select>

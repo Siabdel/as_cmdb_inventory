@@ -1,182 +1,125 @@
-# backend/dashboard/views.py
-from django.shortcuts import render
-from django.db.models import Count, Q, Sum, F
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.db.models import Count, Sum, F
 from django.utils import timezone
 from datetime import timedelta
-from inventory.models import Asset, Category, Brand, Location
-from maintenance.models import MaintenanceTicket as  Ticket
-from stock.models import StockItem
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, HttpResponse
 import json
+
+from inventory.models import Asset, Category, Location
+from maintenance.models import MaintenanceTicket
+from stock.models import StockItem
+from django.views.generic import ListView
+
+
+class StockView(ListView):
+    """
+    Vue pour la gestion du stock dans l'admin
+    """
+    template_name = 'admin/stock/list.html'
+    model = StockItem
+    context_object_name = 'stock_items'
+    
+    def get(self, request):
+        from inventory.models import Brand
+        stock_items = StockItem.objects.select_related('brand', 'location').all()
+        brands = Brand.objects.all()
+        
+        # Calcul des statistiques de stock
+        total_items = stock_items.count()
+        low_stock = stock_items.filter(quantity__lte=F('min_quantity')).count()
+        out_of_stock = stock_items.filter(quantity=0).count()
+        
+        return render(request, self.template_name, {
+            'stock_items': stock_items,
+            'categories': Category.objects.all(),
+            'locations': Location.objects.all(),
+            'brands': brands,
+            'total_items': total_items,
+            'low_stock': low_stock,
+            'out_of_stock': out_of_stock,
+        })
 
 def dashboard_public(request):
     """
-    Dashboard vitrine publique — Lecture seule
-    URL: /
-    Audience: Public (pas d'authentification requise)
+    Vue pour le dashboard public
     """
-    
-    # === KPIs Principaux ===
-    total_assets = Asset.objects.count()
-    active_assets = Asset.objects.filter(status='active').count()
-    in_stock_assets = Asset.objects.filter(status='stock').count()
-    in_maintenance = Asset.objects.filter(status__in=['maintenance', 'repair']).count()
-    
-    total_tickets = Ticket.objects.count()
-    open_tickets = Ticket.objects.filter(status__in=['open', 'assigned', 'in_progress']).count()
-    resolved_tickets_30d = Ticket.objects.filter(
-        status='resolved',
-        resolved_at__gte=timezone.now() - timedelta(days=30)
-    ).count()
-    
-    total_stock_items = StockItem.objects.count()
-    low_stock_items = StockItem.objects.filter(
-        quantity__lte=F('min_quantity')
-    ).count()
-    out_of_stock_items = StockItem.objects.filter(quantity=0).count()
-    
-    # === Répartition par Statut (Assets) ===
-    assets_by_status = Asset.objects.values('status').annotate(
-        count=Count('id')
-    ).order_by('-count')
-    
-    # === Répartition par Catégorie ===
-    assets_by_category = Asset.objects.values(
-        'category__name'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')[:10]
-    
-    # === Top Marques ===
-    top_brands = Asset.objects.values(
-        'brand__name'
-    ).annotate(
-        count=Count('id')
-    ).order_by('-count')[:5]
-    
-    # === Assets Récents (10 derniers) ===
-    recent_assets = Asset.objects.select_related(
-        'category', 'brand', 'location'
-    ).order_by('-created_at')[:10]
-    
-    # === Tickets Récents (10 derniers) ===
-    recent_tickets = Ticket.objects.select_related(
-        'asset', 'assignee'
-    ).order_by('-created_at')[:10]
-    
-    # === Valeur Totale du Stock ===
-    stock_total_value = StockItem.objects.aggregate(
-        total=Sum(F('quantity') * F('unit_price'))
-    )['total'] or 0
-    
-    # === Assets par Localisation ===
-    assets_by_location = Asset.objects.values(
-        'current_location__name'
-    ).annotate(
-        count=Count('id')
-    ).filter(current_location__isnull=False).order_by('-count')[:5]
-    
-    # === Garanties Expirant Bientôt (30 jours) ===
-    warranty_expiring_soon = Asset.objects.filter(
-        warranty_end__isnull=False,
-        warranty_end__lte=timezone.now() + timedelta(days=30),
-        warranty_end__gte=timezone.now()
-    ).count()
-    
-    # === Données pour Graphiques (JSON) ===
-    chart_assets_status = json.dumps({
-        'labels': [item['status'] for item in assets_by_status],
-        'data': [item['count'] for item in assets_by_status]
+    return render(request, 'admin/dashboard.html', {
+        'asset_count': Asset.objects.count(),
+        'maintenance_count': MaintenanceTicket.objects.count()
     })
-    
-    chart_assets_category = json.dumps({
-        'labels': [item['category__name'] or 'Non catégorisé' for item in assets_by_category],
-        'data': [item['count'] for item in assets_by_category]
-    })
-    
-    # === Contexte Template ===
-    context = {
-        # KPIs
-        'total_assets': total_assets,
-        'active_assets': active_assets,
-        'in_stock_assets': in_stock_assets,
-        'in_maintenance': in_maintenance,
-        'total_tickets': total_tickets,
-        'open_tickets': open_tickets,
-        'resolved_tickets_30d': resolved_tickets_30d,
-        'total_stock_items': total_stock_items,
-        'low_stock_items': low_stock_items,
-        'out_of_stock_items': out_of_stock_items,
-        'stock_total_value': stock_total_value,
-        'warranty_expiring_soon': warranty_expiring_soon,
-        
-        # Répartitions
-        'assets_by_status': assets_by_status,
-        'assets_by_category': assets_by_category,
-        'top_brands': top_brands,
-        'assets_by_location': assets_by_location,
-        
-        # Listes récentes
-        'recent_assets': recent_assets,
-        'recent_tickets': recent_tickets,
-        
-        # Graphiques
-        'chart_assets_status': chart_assets_status,
-        'chart_assets_category': chart_assets_category,
-        
-        # Meta
-        'page_title': 'Dashboard CMDB Inventory',
-        'last_updated': timezone.now()
-    }
-    
-    return render(request, 'dashboard.html', context)
 
 
 def dashboard_stats_api(request):
     """
     API Endpoint pour statistiques dashboard (JSON)
-    URL: /api/v1/dashboard/stats/
-    Utilisé par le frontend Vue.js pour rafraîchissement dynamique
     """
     from django.http import JsonResponse
-    from django.db.models import Count, F, Sum
-    from django.utils import timezone
-    from datetime import timedelta
-    
     stats = {
         'assets': {
             'total': Asset.objects.count(),
-            'active': Asset.objects.filter(status='active').count(),
-            'stock': Asset.objects.filter(status='stock').count(),
-            'maintenance': Asset.objects.filter(status__in=['maintenance', 'repair']).count(),
-            'retired': Asset.objects.filter(status='retired').count()
+            'active': Asset.objects.filter(status='active').count()
         },
         'tickets': {
-            'total': Ticket.objects.count(),
-            'open': Ticket.objects.filter(status='open').count(),
-            'in_progress': Ticket.objects.filter(status='in_progress').count(),
-            'resolved_30d': Ticket.objects.filter(
-                status='resolved',
-                resolved_at__gte=timezone.now() - timedelta(days=30)
-            ).count()
-        },
-        'stock': {
-            'total_items': StockItem.objects.count(),
-            'low_stock': StockItem.objects.filter(quantity__lte=F('min_stock')).count(),
-            'out_of_stock': StockItem.objects.filter(quantity=0).count(),
-            'total_value': float(StockItem.objects.aggregate(
-                total=Sum(F('quantity') * F('unit_price'))
-            )['total'] or 0)
-        },
-        'alerts': {
-            'warranty_expiring': Asset.objects.filter(
-                warranty_end__isnull=False,
-                warranty_end__lte=timezone.now() + timedelta(days=30)
-            ).count(),
-            'overdue_tickets': Ticket.objects.filter(
-                due_date__lt=timezone.now(),
-                status__in=['open', 'assigned', 'in_progress']
-            ).count()
+            'total': MaintenanceTicket.objects.count(),
+            'open': MaintenanceTicket.objects.filter(status='open').count()
         }
     }
-    
     return JsonResponse(stats)
+
+
+def asset_list(request):
+    """
+    Vue personnalisée pour la liste des assets avec compteurs
+    """
+    assets = Asset.objects.all()
+    
+    context = {
+        'asset_count': assets.count(),
+        'active_assets': assets.filter(status='active').count(),
+        'maintenance_count': MaintenanceTicket.objects.count(),
+        'open_tickets': MaintenanceTicket.objects.filter(status='open').count()
+    }
+    
+    return render(request, 'admin/assets/list.html', context)
+
+
+def admin_login_view(request):
+    """
+    Vue personnalisée pour la page de login admin avec authentification Django
+    """
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('/admin/')
+        else:
+            return render(request, 'admin/admin_login.html', {
+                'error': 'Identifiants invalides'
+            })
+    
+    return render(request, 'admin/admin_login.html')
+
+
+def admin_logout_view(request):
+    """
+    Vue pour la déconnexion admin
+    """
+    logout(request)
+    return redirect('/admin/tickets/login/')
+
+
+@login_required
+def admin_dashboard_view(request):
+    """
+    Vue protégée pour le dashboard admin
+    """
+    return render(request, 'admin/dashboard.html')
+

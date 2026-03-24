@@ -52,6 +52,7 @@ THIRD_PARTY_APPS = [
     'drf_spectacular',
 ]
 
+
 LOCAL_APPS = [
     'inventory',
     'stock',
@@ -66,6 +67,7 @@ QR_CODE_BASE_URL = os.environ.get('INVENTORY_QR_CODE_BASE_URL', 'http://localhos
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    ##'inventory_project.middleware.AdminAuthMiddleware',  # Middleware d'authentification admin
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',  # Required for session auth
@@ -209,6 +211,8 @@ STATICFILES_FINDERS = (
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://localhost:8300',
+    'http://localhost:8000',
 ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -227,13 +231,14 @@ CORS_ALLOW_HEADERS = [
 REST_FRAMEWORK = {
     # ── Authentication ───────────────────────
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        #'rest_framework.authentication.SessionAuthentication',
     ],
     
     # ── Permissions ──────────────────────────
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        #'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',  # ← à revoir en prod
     ],
 
     # ── Schema ───────────────────────────────
@@ -252,16 +257,30 @@ REST_FRAMEWORK = {
 }
 
 # ── Configuration Spectacular ─────────────────
+
+# settings.py
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'AS CMDB Inventory API',
-    'DESCRIPTION': 'API REST pour la gestion d\'inventaire matériel IT — reconditionnement',
+    'TITLE': 'Votre API',
+    'DESCRIPTION': 'Documentation API avec DRF + JWT',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'COMPONENT_SPLIT_REQUEST': True,
-    'SCHEMA_PATH_PREFIX': r'/api/',
+    'AUTHENTICATION_WHITELIST': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }
 
 # DRF Spectacular Configuration (OpenAPI 3 documentation)
+
+# ── Configuration JWT ───────────────────────
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'CMDB Inventory API',

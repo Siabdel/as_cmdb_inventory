@@ -27,7 +27,7 @@ class DashboardView(TemplateView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.annotate(asset_count=Count('assets')).order_by('name')
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
@@ -36,7 +36,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 class BrandViewSet(viewsets.ModelViewSet):
     queryset = Brand.objects.annotate(asset_count=Count('assets')).order_by('name')
     serializer_class = BrandSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name']
     ordering_fields = ['name', 'created_at']
@@ -45,7 +45,7 @@ class BrandViewSet(viewsets.ModelViewSet):
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.annotate(asset_count=Count('assets')).order_by('name')
     serializer_class = LocationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
     search_fields = ['name']
     filterset_fields = ['type']
@@ -54,7 +54,7 @@ class LocationViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all().order_by('name')
     serializer_class = TagSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name']
 
@@ -414,3 +414,4 @@ def print_label_view(request, asset_id):
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="etiquette_asset_{asset.internal_code}.pdf"'
     return response
+

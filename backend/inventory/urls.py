@@ -1,27 +1,33 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
+# Initialisation du routeur
+router = DefaultRouter()
+
+# Enregistrement des ViewSets
+router.register(r'category', views.CategoryViewSet, basename='category')
+router.register(r'location', views.LocationViewSet, basename='location')
+router.register(r'brand', views.BrandViewSet, basename='brand')
+router.register(r'assets', views.AssetViewSet, basename='asset')
+router.register(r'movements', views.AssetMovementViewSet, basename='asset-movement')
+
+# URLs spécifiques (non couvertes par le routeur)
 urlpatterns = [
-    path('category/', views.CategoryViewSet.as_view({'get': 'list'})),
-    path('location/', views.LocationViewSet.as_view({'get': 'list'})),
-    path('brand/', views.BrandViewSet.as_view({'get': 'list'})),
-    path('dashboard/', views.DashboardViewSet.as_view({'get': 'list'})),
+    path('', include(router.urls)),
+    
+    # Dashboard
+    path('dashboard/', views.DashboardViewSet.as_view({'get': 'list'}), name='dashboard'),
     path('dashboard/stats/', views.DashboardStatsView.as_view({'get': 'list'}), name='dashboard-stats'),
-    path('<int:pk>/movements/', views.AssetMovementsView.as_view({'get': 'list'}), name='asset-movements'),
-
-    path('', views.AssetViewSet.as_view({'get': 'list', 'post': 'create'}), name='asset-list'),
-    path('<int:pk>/', views.AssetViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update'}), name='asset-detail'),
-    path('assets/', views.AssetViewSet.as_view({'get': 'list'}), name='asset-list-assets'),
-    path('assets/by-status/', views.AssetViewSet.as_view({'get': 'by_status'}), name='asset-by-status-assets'),
-
-    path('assets/by-category/', views.AssetViewSet.as_view({'get': 'by_category'}), name='asset-by-category-assets'),
+    
+    # Actions custom
     path('assets/warranty-expiring/', views.AssetViewSet.as_view({'get': 'warranty_expiring'}), name='warranty-expiring-assets'),
-
-    path('by-category/', views.AssetViewSet.as_view({'get': 'by_category'}), name='asset-by-category'),
-    path('by-status/', views.AssetViewSet.as_view({'get': 'by_status'}), name='asset-by-status'),
-    path('by-location/', views.AssetViewSet.as_view({'get': 'by_location'}), name='asset-by-location'),
-    path('<int:pk>/move/', views.AssetViewSet.as_view({'post': 'move'}), name='asset-move'),
-
-    path('movements/', views.AssetMovementViewSet.as_view({'get': 'list'}), name='asset-movements'),
-    path('warranty-expiring/', views.AssetViewSet.as_view({'get': 'warranty_expiring'}), name='warranty-expiring'),
+    path('assets/by-category/', views.AssetViewSet.as_view({'get': 'by_category'}), name='asset-by-category-assets'),
+    path('assets/by-status/', views.AssetViewSet.as_view({'get': 'by_status'}), name='asset-by-status-assets'),
+    
+    # Autres endpoints nécessitant une configuration manuelle
+    path('<int:pk>/movements/', views.AssetMovementsView.as_view({'get': 'list'}), name='asset-movements'),
+    
+    # Endpoint pour les utilisateurs avec filtre par rôle (ex: /api/v1/auth/users/?role=technicien)
+    # Supprimé - déplacé vers l'application staff
 ]

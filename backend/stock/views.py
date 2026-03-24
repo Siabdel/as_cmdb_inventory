@@ -9,11 +9,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Sum, F
 
 from .models import StockItem, StockMovement
-from .serializers import (StockItemSerializer, StockItemListSerializer,
+from .serializers import (StockItemSerializer, StockItemListSerializer, 
                            StockMovementSerializer)
 from inventory.models import Category
 from django.db.models import Count
-
+from inventory.serializers import CategorySerializer
 
 class StockItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -33,6 +33,10 @@ class StockItemViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return StockItemListSerializer
         return StockItemSerializer
+
+    def create(self, request, *args, **kwargs):
+        """Permet la création d'un nouvel article de stock via POST."""
+        return super().create(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'], url_path='low-stock')
     def low_stock(self, request):
@@ -107,10 +111,4 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = Category.objects.annotate(asset_count=Count('assets')).order_by('name')
     permission_classes = [IsAuthenticated]
-
-    class CategorySerializer(serializers.ModelSerializer):
-        class Meta:
-            model = Category
-            fields = ['id', 'name', 'asset_count']
-
     serializer_class = CategorySerializer

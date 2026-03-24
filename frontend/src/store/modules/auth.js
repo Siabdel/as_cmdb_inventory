@@ -4,7 +4,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import apiClient from '@/api/client'
+import apiClient from '@/api/jwtClient'
 
 export const useAuthStore = defineStore('auth', () => {
   // État
@@ -27,23 +27,24 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       // Appel API pour l'authentification
-      const response = await apiClient.post('/auth/token/', credentials)
+      const response = await apiClient.post('/api/token/', credentials)
       
-      if (response.data.token) {
-        token.value = response.data.token
+      if (response.data.access && response.data.refresh) {
+        token.value = response.data.access
         
-        // Stocker le token dans localStorage
-        localStorage.setItem('auth_token', token.value)
+        // Stocker les tokens dans localStorage
+        localStorage.setItem('access_token', response.data.access)
+        localStorage.setItem('refresh_token', response.data.refresh)
         
         // Configurer le header Authorization pour les futures requêtes
-        apiClient.defaults.headers.common['Authorization'] = `Token ${token.value}`
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
         
         // Récupérer les informations utilisateur
         await fetchUser()
         
         return { success: true }
       } else {
-        throw new Error('Token non reçu')
+        throw new Error('Tokens non reçus')
       }
     } catch (err) {
       error.value = err.response?.data?.detail || err.message || 'Erreur de connexion'
@@ -63,8 +64,9 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = null
       error.value = null
       
-      // Supprimer le token du localStorage
-      localStorage.removeItem('auth_token')
+      // Supprimer les tokens du localStorage
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
       
       // Supprimer le header Authorization
       delete apiClient.defaults.headers.common['Authorization']
@@ -81,7 +83,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       // Récupérer les informations de l'utilisateur connecté
-      const response = await apiClient.get('/auth/user/')
+      const response = await apiClient.get('/api/auth/user/')
       user.value = response.data
     } catch (err) {
       console.error('Erreur lors de la récupération des données utilisateur:', err)
@@ -97,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       token.value = savedToken
-      apiClient.defaults.headers.common['Authorization'] = `Token ${savedToken}`
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
       
       // Vérifier la validité du token en récupérant les données utilisateur
       await fetchUser()

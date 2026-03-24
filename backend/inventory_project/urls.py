@@ -11,6 +11,7 @@ from scanner.views import public_scan_result
 from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path('', DashboardView.as_view(), name='dashboard'),  # ← accueil
@@ -32,14 +33,19 @@ urlpatterns = [
     path('api/v1/inventory/',  include('inventory.urls')),# URLs de l'app inventory (CRUD assets, catégories, etc.)
     path('api/v1/maintenance/', include('maintenance.urls')),
     path('api/v1/scanner/', include('scanner.urls')), # URLs spécifiques au scanner QR code
-    path('api/v1/maintenance/', include('maintenance.urls')), # URLs spécifiques à la maintenance
     # config/urls.py
     path('api/v1/stock/', include('stock.urls')),
+    path('api/v1/inventory/dashboard/stats/', include('inventory.urls')),
     # Authentification DRF
     path('api-auth/', include('rest_framework.urls')),
     # Authentification par token (pour le frontend)
-    path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
-    path('api/auth/user/', CurrentUserView.as_view(), name='api_current_user'),
+   path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
+   path('api/auth/user/', CurrentUserView.as_view(), name='api_current_user'),
+   # Authentification JWT
+   path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+   path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/v1/staff/', include('staff.urls')),
+    path('api/stats/', include('cmdb_admin.urls')),
 ]
 
 # URLs en mode DEBUG uniquement

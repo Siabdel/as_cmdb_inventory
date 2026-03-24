@@ -4,15 +4,38 @@
       <div class="card-header bg-primary text-white">
         <h5 class="card-title mb-0">
           <i class="bi bi-upc-scan me-2"></i>
-          Simulation de scan d'asset
+          Scan d'asset avec scanners USB/Honeywell
         </h5>
       </div>
       <div class="card-body">
         <!-- Instructions -->
         <div class="alert alert-info mb-4">
           <i class="bi bi-info-circle me-2"></i>
-          Utilisez une douchette USB (qui émule le clavier) ou saisissez manuellement le code de l'asset.
+          Utilisez un scanner USB Honeywell ou saisissez manuellement le code de l'asset.
           Appuyez sur Entrée ou cliquez sur "Valider le scan" pour enregistrer.
+        </div>
+
+        <!-- Type de scanner -->
+        <div class="mb-3">
+          <label class="form-label">Type de scanner détecté</label>
+          <div class="btn-group" role="group">
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              :class="{ active: scannerType === 'webcam' }"
+              @click="scannerType = 'webcam'"
+            >
+              Caméra Web
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-success"
+              :class="{ active: scannerType === 'usb' }"
+              @click="scannerType = 'usb'"
+            >
+              Scanner USB
+            </button>
+          </div>
         </div>
 
         <!-- Formulaire de scan -->
@@ -39,7 +62,12 @@
                 </button>
               </div>
               <div class="form-text">
-                Le champ capture automatiquement les entrées des scanners USB.
+                <span v-if="scannerType === 'usb'">
+                  Le champ capture automatiquement les entrées des scanners USB Honeywell.
+                </span>
+                <span v-else>
+                  Le champ capture les entrées de la caméra web.
+                </span>
               </div>
             </div>
           </div>
@@ -200,6 +228,7 @@ const recentScans = ref([])
 const scanCountToday = ref(0)
 const toasts = ref([])
 const codeInput = ref(null)
+const scannerType = ref('webcam') // 'webcam' ou 'usb'
 
 // Focus automatique sur le champ de code
 onMounted(() => {
@@ -207,6 +236,8 @@ onMounted(() => {
     codeInput.value.focus()
   }
   loadRecentScans()
+  // Détecter les scanners USB
+  detectUsbScanners()
 })
 
 // Gestionnaire de scan
@@ -226,8 +257,8 @@ const handleScan = async () => {
       asset_code: assetCode.value.trim(),
       scanned_by: 'Utilisateur Web', // À remplacer par l'utilisateur connecté
       scan_location: scanLocation.value || 'Interface web',
-      source: 'web_frontend',
-      notes: `Scan via interface web`
+      source: scannerType.value === 'usb' ? 'scanner_usb' : 'web_frontend',
+      notes: `Scan via ${scannerType.value === 'usb' ? 'scanner USB' : 'interface web'}`
     }
 
     const scanResponse = await assetScanApi.recordScan(scanData)
@@ -255,6 +286,14 @@ const handleScan = async () => {
     )
     currentAsset.value = null
   }
+}
+
+// Détection des scanners USB
+const detectUsbScanners = () => {
+  // Pour l'instant, on reste sur le mode par défaut
+  // Dans une implémentation réelle, on pourrait détecter les scanners USB connectés
+  // via l'API de détection de périphériques
+  console.log('Détection des scanners USB...')
 }
 
 // Charger les scans récents
