@@ -5,10 +5,10 @@
       <div class="scanner-header text-center mb-3">
         <h4 class="text-white">
           <i class="bi bi-qr-code-scan me-2"></i>
-          Scanner un QR Code
+          Scanner un QR Code ou Code à Barres
         </h4>
         <p class="text-white-50 mb-0">
-          Pointez la caméra vers le QR code de l'équipement
+          Pointez la caméra vers le QR code ou le code à barres de l'équipement
         </p>
       </div>
 
@@ -163,6 +163,8 @@ export default {
     const processing = ref(false)
     const cameras = ref([])
     const selectedCameraId = ref('')
+    const usbScanBuffer = ref('')
+    const usbScanTimeout = ref(null)
 
     // Configuration du scanner
     const scannerConfig = {
@@ -175,7 +177,22 @@ export default {
       disableFlip: false,
       videoConstraints: {
         facingMode: 'environment' // Caméra arrière par défaut
-      }
+      },
+      // Activer le support des codes à barres
+      supportedFormats: [
+        "QR_CODE",
+        "CODE_128",
+        "CODE_39",
+        "CODE_93",
+        "EAN_13",
+        "EAN_8",
+        "UPC",
+        "UPC_E",
+        "I2OF5"
+      ],
+      // Support des scanners USB (émulation clavier)
+      // Pour les scanners Honeywell, on peut spécifier un délai de traitement
+      delayBetweenScans: 100
     }
 
     // Méthodes
@@ -238,7 +255,7 @@ export default {
     }
 
     const onScanSuccess = (decodedText, decodedResult) => {
-      console.log('QR Code scanné:', decodedText)
+      console.log('Code scanné:', decodedText, 'Type:', decodedResult.format)
       
       scannedData.value = decodedText
       stopScanner()
@@ -248,9 +265,11 @@ export default {
         navigator.vibrate(200)
       }
 
+      // Pour les scanners USB, on peut avoir des codes à barres
       emit('scan-success', {
         text: decodedText,
-        result: decodedResult
+        result: decodedResult,
+        format: decodedResult.format
       })
     }
 
@@ -315,7 +334,7 @@ export default {
       processing.value = true
       
       try {
-        // Extraire l'ID de l'asset depuis l'URL du QR code
+        // Extraire l'ID de l'asset depuis le code scanné (QR code ou code à barres)
         const assetId = extractAssetId(scannedData.value)
         
         if (assetId) {
@@ -324,7 +343,25 @@ export default {
             assetId: assetId
           })
         } else {
-          throw new Error('QR code invalide. Impossible d\'extraire l\'ID de l\'équipement.')
+          // Si ce n'est pas un QR code valide, essayer de le traiter comme un code à barres
+          const barcodeId = extractBarcodeId(scannedData.value)
+          if (barcodeId) {
+            emit('scan-success', {
+              text: scannedData.value,
+              assetId: barcodeId
+            })
+          } else {
+            // Pour les scanners USB, on peut aussi essayer de traiter comme un code direct
+            if (scannedData.value && scannedData.value.length > 5) {
+              // Si c'est un code à barres, on peut l'utiliser directement
+              emit('scan-success', {
+                text: scannedData.value,
+                assetId: scannedData.value
+              })
+            } else {
+              throw new Error('Code scanné invalide. Impossible d\'extraire l\'ID de l\'équipement.')
+            }
+          }
         }
       } catch (err) {
         toast.error(err.message)
@@ -348,6 +385,41 @@ export default {
         const uuidPattern = /^[a-f0-9-]{36}$/i
         if (uuidPattern.test(qrData)) {
           return qrData
+        }
+        
+        return null
+      } catch (err) {
+        return null
+      }
+    }
+    
+    // Méthode pour gérer les scans via USB (codes à barres)
+    const handleUSBScan = (text) => {
+      console.log('Scan USB reçu:', text);
+      scannedData.value = text;
+      // Démarrer le traitement du scan
+      handleScanResult();
+    }
+
+    const extractBarcodeId = (barcodeData) => {
+      try {
+        // Pour les codes à barres, on peut essayer d'extraire un numéro de série ou un ID
+        // Format possible : SR-YYYYMMDD-HHMMSS-XXXX
+        const serialPattern = /^SR-\d{8}-\d{6}-[A-Z0-9]{4}$/i
+        if (serialPattern.test(barcodeData)) {
+          return barcodeData
+        }
+        
+        // Format possible : CI-YYYYMMDD-HHMMSS-XXXX
+        const internalPattern = /^CI-\d{8}-\d{6}-[A-Z0-9]{4}$/i
+        if (internalPattern.test(barcodeData)) {
+          return barcodeData
+        }
+        
+        // Si c'est un UUID simple
+        const uuidPattern = /^[a-f0-9-]{36}$/i
+        if (uuidPattern.test(barcodeData)) {
+          return barcodeData
         }
         
         return null

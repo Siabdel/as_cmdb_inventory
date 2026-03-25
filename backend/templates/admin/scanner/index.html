@@ -12,8 +12,9 @@
 <div id="scanner-app" class="scanner-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">📷 Scanner QR Code</h2>
-            <p class="text-muted mb-0">Scannez un QR code pour accéder à la fiche asset</p>
+            <h2 class="mb-1">📷 Scanner QR Code ou Code à Barres</h2>
+            <p class="text-muted mb-0">Scannez un QR code ou un code à barres pour accéder à la fiche asset</p>
+            <p class="text-info">[[ msg ]]</p>
         </div>
         <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" id="continuous-scan" v-model="continuousScan">
@@ -57,8 +58,8 @@
     <div class="usb-scanner-instructions card-cmdb" v-if="scannerType === 'usb' && !scanResult">
         <i class="bi bi-keyboard"></i>
         <h4 class="text-white mb-3">Scanner USB Honeywell</h4>
-        <p class="text-muted mb-4">Connectez votre scanner USB Honeywell et scannez directement les QR codes</p>
-        <p class="text-muted mb-4">Les scanners Honeywell émulent le clavier, vous pouvez scanner directement dans le champ ci-dessous</p>
+        <p class="text-white mb-4">Connectez votre scanner USB Honeywell et scannez directement les QR codes</p>
+        <p class="text-white mb-4">Les scanners Honeywell émulent le clavier, vous pouvez scanner directement dans le champ ci-dessous</p>
     </div>
 
     <!-- Permission Request -->
@@ -85,17 +86,17 @@
     </div>
 
     <!-- Scan Result -->
-    <div class="scan-result-card" v-if="scanResult">
+    <div class="scan-result-card" v-if="scanResult" style="background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px; margin-top: 20px;">
         <div class="scan-result-header">
-            <img :src="scanResult.photo || '/static/admin_cmdb/img/no-image.png'" 
+            <img :src="scanResult.photo || '/static/admin_cmdb/img/no-image.png'"
                  class="scan-result-thumb" alt="[[ scanResult.name ]]">
             <div class="scan-result-info">
                 <h3 class="text-white">[[ scanResult.name ]]</h3>
-                <p>S/N: [[ scanResult.serial_number ]] • [[ scanResult.category_name ]]</p>
-                <p>📍 [[ scanResult.location_name || 'Non localisé' ]]</p>
+                <p class="text-white">S/N: [[ scanResult.serial_number ]] • [[ scanResult.category_name ]]</p>
+                <p class="text-white">📍 [[ scanResult.location_name || 'Non localisé' ]]</p>
             </div>
             <div class="ms-auto">
-                <span class="status-badge" :class="getStatusClass(scanResult.status)">
+                <span class="status-badge" :class="getStatusClass(scanResult.status)" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 8px;">
                     [[ scanResult.status ]]
                 </span>
             </div>

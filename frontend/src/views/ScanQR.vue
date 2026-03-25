@@ -4,10 +4,10 @@
     <div class="scan-header text-center mb-4">
       <h1 class="h3 text-white mb-2">
         <i class="bi bi-qr-code-scan me-2"></i>
-        Scanner QR Code
+        Scanner QR Code ou Code à Barres
       </h1>
       <p class="text-white-50 mb-0">
-        Scannez le QR code d'un équipement pour accéder rapidement à ses informations
+        Scannez le QR code ou le code à barres d'un équipement pour accéder rapidement à ses informations
       </p>
     </div>
 
@@ -281,7 +281,12 @@ export default {
         }
 
         if (!assetId) {
-          throw new Error('QR code invalide. Impossible d\'identifier l\'équipement.')
+          // Pour les codes à barres, on peut essayer de traiter directement
+          if (scanData.text && scanData.text.length > 5) {
+            assetId = scanData.text;
+          } else {
+            throw new Error('Code scanné invalide. Impossible d\'identifier l\'équipement.')
+          }
         }
 
         // Récupérer les informations de l'asset
