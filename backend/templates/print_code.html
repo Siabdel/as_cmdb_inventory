@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Impression de Code</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .code-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .code-image {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px auto;
+            max-width: 300px;
+        }
+        .asset-info {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Impression de Code pour l'Asset</h1>
+    
+    <div class="asset-info">
+        <h2 id="asset-name">Nom de l'asset</h2>
+        <p><strong>ID:</strong> <span id="asset-id">-</span></p>
+        <p><strong>Catégorie:</strong> <span id="asset-category">-</span></p>
+        <p><strong>Type de Code:</strong> <span id="code-type">-</span></p>
+    </div>
+    
+    <div class="code-container">
+        <img id="code-image" class="code-image" src="" alt="Code d'identification">
+    </div>
+    
+    <div style="text-align: center;">
+        <button class="btn" onclick="window.print()">Imprimer</button>
+        <button class="btn" onclick="window.close()">Fermer</button>
+    </div>
+    
+    <script>
+        // Récupérer l'ID de l'asset depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const assetId = urlParams.get('asset_id');
+        
+        if (assetId) {
+            // Appel API pour récupérer le code
+            fetch(`/api/v1/assets/${assetId}/print/`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('asset-name').textContent = data.asset_name;
+                    document.getElementById('asset-id').textContent = data.asset_id;
+                    document.getElementById('asset-category').textContent = data.category;
+                    document.getElementById('code-type').textContent = data.type;
+                    
+                    // Afficher l'image du code
+                    const img = document.getElementById('code-image');
+                    img.src = `data:image/png;base64,${data.data}`;
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    document.body.innerHTML = '<p>Erreur lors de la récupération du code.</p>';
+                });
+        } else {
+            document.body.innerHTML = '<p>ID de l\'asset non spécifié.</p>';
+        }
+    </script>
+</body>
+</html>

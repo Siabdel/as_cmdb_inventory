@@ -1,0 +1,151 @@
+<!-- templates/admin/scan_print/landing.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Scan & Print Hub — CMDB Inventory{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'admin_cmdb/css/scan_print_hub.css' %}" rel="stylesheet">
+<link href="{% static 'admin_cmdb/css/scan_print_landingpage.css' %}" rel="stylesheet">
+   
+{% endblock %}
+
+{% block content %}
+<div id="scan-print-hub" class="container-fluid py-4">
+    
+    <!-- Hero Section -->
+    <div class="hub-hero">
+        <h1>🎯 Centre de Tracabilité Assets</h1>
+        <p>Scanner, imprimer et auditer tous vos assets IT en un seul endroit. Traçabilité complète du cycle de vie.</p>
+    </div>
+    
+    <!-- Main Cards -->
+    <div class="hub-cards">
+        <!-- Scan Card -->
+        <a href="/admin/scanner/" class="hub-card">
+            <div class="hub-card-icon scan">📷</div>
+            <h3>Scanner QR / Code-Barres</h3>
+            <p>Identifiez instantanément n'importe quel asset avec votre scanner USB, douchette Bluetooth ou caméra smartphone.</p>
+            <div class="hub-card-features">
+                <span class="hub-feature">USB HoneyWell</span>
+                <span class="hub-feature">Bluetooth</span>
+                <span class="hub-feature">Webcam</span>
+                <span class="hub-feature">Smartphone</span>
+            </div>
+        </a>
+        
+        <!-- Print Card -->
+        <a href="/admin/scanner/print/" class="hub-card">
+            <div class="hub-card-icon print">🖨️</div>
+            <h3>Imprimer Étiquettes QR</h3>
+            <p>Générez et imprimez des étiquettes QR Code professionnelles pour tous vos assets. Supporte impression batch.</p>
+            <div class="hub-card-features">
+                <span class="hub-feature">Single/Batch</span>
+                <span class="hub-feature">USB/BT/WiFi</span>
+                <span class="hub-feature">Templates</span>
+                <span class="hub-feature">PDF Export</span>
+            </div>
+        </a>
+        
+        <!-- Audit Card -->
+        <a href="/admin/scanner/logs/" class="hub-card">
+            <div class="hub-card-icon audit">📊</div>
+            <h3>Audit & Historique</h3>
+            <p>Consultez l'historique complet des scans et impressions. Traçabilité conforme pour audit et compliance.</p>
+            <div class="hub-card-features">
+                <span class="hub-feature">ScanLog</span>
+                <span class="hub-feature">PrintLog</span>
+                <span class="hub-feature">Export CSV</span>
+                <span class="hub-feature">Rapports</span>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value">[[ stats.scans_today ]]</div>
+                <div class="stat-label">📷 Scans aujourd'hui</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">[[ stats.prints_today ]]</div>
+                <div class="stat-label">🖨️ Impressions aujourd'hui</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">[[ stats.total_assets ]]</div>
+                <div class="stat-label">💻 Assets totaux</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">[[ stats.printers_active ]]</div>
+                <div class="stat-label">🖨️ Imprimantes actives</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <h2>⚡ Actions Rapides</h2>
+        <div class="quick-actions-grid">
+            <a href="/admin/scanner/" class="quick-action-btn">
+                <i>📷</i>
+                <span>Scanner Asset</span>
+            </a>
+            <a href="/admin/assets/" class="quick-action-btn">
+                <i>📋</i>
+                <span>Sélectionner Assets</span>
+            </a>
+            <a href="/admin/scanner/print/" class="quick-action-btn">
+                <i>🖨️</i>
+                <span>Imprimer Étiquettes</span>
+            </a>
+            <a href="/admin/scanner/templates/" class="quick-action-btn">
+                <i>🎨</i>
+                <span>Templates</span>
+            </a>
+            <a href="/admin/scanner/printers/" class="quick-action-btn">
+                <i>⚙️</i>
+                <span>Imprimantes</span>
+            </a>
+            <a href="/admin/scanner/jobs/" class="quick-action-btn">
+                <i>📜</i>
+                <span>Jobs d'Impression</span>
+            </a>
+            <a href="/admin/scanner/logs/" class="quick-action-btn">
+                <i>🔍</i>
+                <span>Historique</span>
+            </a>
+            <a href="/admin/search/" class="quick-action-btn">
+                <i>🔎</i>
+                <span>Recherche</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="recent-activity">
+        <h2>🕐 Activité Récente</h2>
+        <div class="activity-list" v-if="recentActivity.length > 0">
+            <div class="activity-item" v-for="activity in recentActivity" :key="activity.id">
+                <div class="activity-icon" :class="activity.type">
+                    [[ activity.type === 'scan' ? '📷' : '🖨️' ]]
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">[[ activity.title ]]</div>
+                    <div class="activity-meta">[[ activity.meta ]]</div>
+                </div>
+                <div class="activity-time">[[ activity.time ]]</div>
+            </div>
+        </div>
+        <div v-else class="text-center text-muted py-5">
+            <i style="font-size: 3rem; opacity: 0.3;">📊</i>
+            <p class="mt-3">Aucune activité récente</p>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/scan_print_hub.js' %}"></script>
+{% endblock %}

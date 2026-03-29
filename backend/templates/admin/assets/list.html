@@ -6,10 +6,34 @@
 
 {% block extra_css %}
 <link href="{% static 'admin_cmdb/css/assets.css' %}" rel="stylesheet">
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-overlay .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div id="assets-app">
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" v-if="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1">💻 Parc Matériel</h2>
@@ -120,10 +144,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="asset in assets" :key="asset.id">
+                        <tr v-for="(asset, index) in assets" :key="index">
                             <td data-label="Select">
-                                <input type="checkbox" class="form-check-input" 
-                                       v-model="selectedAssets" :value="asset.id">
+                                <input type="checkbox" class="form-check-input"
+                                       v-model="selectedAssets" :value="asset?.id">
                             </td>
                             <td data-label="Asset">
                                 <div class="d-flex align-items-center">
@@ -216,8 +240,9 @@
                 <div class="modal-body">
                     <select class="form-select bg-dark border-secondary text-white" v-model="moveLocation">
                         <option value="">Sélectionner une localisation</option>
-                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
-                            [[ loc.name ]]
+                        
+                        <option v-for="loc in locations" :key="loc?.id || index" :value="loc?.id" v-if="loc">
+                            [[ loc?.name || '-' ]]
                         </option>
                     </select>
                 </div>

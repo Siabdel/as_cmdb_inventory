@@ -28,6 +28,9 @@ urlpatterns = [
     # Autres endpoints nécessitant une configuration manuelle
     path('<int:pk>/movements/', views.AssetMovementsView.as_view({'get': 'list'}), name='asset-movements'),
     
+    # Endpoint pour la génération de codes
+    path('assets/<int:asset_id>/print/', views.CodePrintView.as_view(), name='asset-print-code'),
+    
     # Endpoint pour les utilisateurs avec filtre par rôle (ex: /api/v1/auth/users/?role=technicien)
     # Supprimé - déplacé vers l'application staff
 ]

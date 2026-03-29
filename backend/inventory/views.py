@@ -1,7 +1,8 @@
 """
 Views pour l'API CMDB Inventory
 """
-from .models import Category, Brand, Location, Tag, Asset, AssetMovement
+import os
+import tempfile
 from django.views.generic import TemplateView
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
@@ -12,6 +13,24 @@ from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework.views import APIView
+#  
+from django.contrib.admin.views.decorators import staff_member_required
+from scanner.models import QRCode
+
+# backend/scanner/views.py (VERSION CORRIGÉE)
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import mm
+from reportlab.lib.utils import ImageReader
+from PIL import Image
+from io import BytesIO
+from scanner.models import QRCode
+# qrcode et barcode
+import qrcode
+import barcode
+from barcode.writer import ImageWriter
+
 
 from .models import Category, Brand, Location, Tag, Asset, AssetMovement
 from .serializers import (
@@ -190,6 +209,179 @@ class AssetViewSet(viewsets.ModelViewSet):
         ).order_by('-moved_at')[:10]
         serializer = AssetMovementSerializer(movements, many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='generate-code')
+    def generate_code(self, request, pk=None):
+        """Génère un code (QR ou barcode) pour un asset selon son type."""
+        from django.contrib.auth.models import User
+        import logging
+        
+        # Configurer le logger
+        logger = logging.getLogger(__name__)
+        
+        asset = self.get_object()
+        
+        # Déterminer le type de code selon la catégorie
+        category_name = asset.category.name if asset.category else ""
+        
+        # Règles de génération de codes
+        if category_name in ['Laptop', 'Serveur', 'Switch']:
+            # QR Code avec l'internal_code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(asset.internal_code)
+            qr.make(fit=True)
+            
+            # Générer l'image QR code
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convertir en bytes
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            
+            # Log de génération
+            logger.info(f"QR Code généré pour l'asset {asset.id} ({asset.name}) par {request.user.username}")
+            
+            return Response({
+                'type': 'qr_code',
+                'data': buffer.getvalue().hex(),
+                'asset_id': asset.id,
+                'asset_name': asset.name,
+                'category': category_name
+            })
+            
+        elif category_name in ['Imprimante', 'NAS', 'Onduleur']:
+            # QR Code avec l'internal_code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(asset.internal_code)
+            qr.make(fit=True)
+            
+            # Générer l'image QR code
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Convertir en bytes
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            
+            # Log de génération
+            logger.info(f"QR Code généré pour l'asset {asset.id} ({asset.name}) par {request.user.username}")
+            
+            return Response({
+                'type': 'qr_code',
+                'data': buffer.getvalue().hex(),
+                'asset_id': asset.id,
+                'asset_name': asset.name,
+                'category': category_name
+            })
+            
+        elif category_name in ['Souris', 'Clavier', 'Écran']:
+            # Code-barres avec le serial_number pour les autres catégories
+            # Générer le code-barres
+            barcode_class = barcode.get_barcode_class('code128')
+            barcode_instance = barcode_class(asset.serial_number, writer=ImageWriter())
+            
+            # Générer l'image
+            buffer = BytesIO()
+            barcode_instance.write(buffer)
+            buffer.seek(0)
+            
+            # Log de génération
+            logger.info(f"Code-barres généré pour l'asset {asset.id} ({asset.name}) par {request.user.username}")
+            
+            return Response({
+                'type': 'barcode',
+                'data': buffer.getvalue().hex(),
+                'asset_id': asset.id,
+                'asset_name': asset.name,
+                'category': category_name
+            })
+            
+        elif category_name in ['Câble', 'Adaptateur']:
+            # Code-barres avec le serial_number pour les autres catégories
+            # Générer le code-barres
+            barcode_class = barcode.get_barcode_class('code128')
+            barcode_instance = barcode_class(asset.serial_number, writer=ImageWriter())
+            
+            # Générer l'image
+            buffer = BytesIO()
+            barcode_instance.write(buffer)
+            buffer.seek(0)
+            
+            # Log de génération
+            logger.info(f"Code-barres généré pour l'asset {asset.id} ({asset.name}) par {request.user.username}")
+            
+            return Response({
+                'type': 'barcode',
+                'data': buffer.getvalue().hex(),
+                'asset_id': asset.id,
+                'asset_name': asset.name,
+                'category': category_name
+            })
+            
+        else:
+            # Code interne pour les pièces atelier
+            # Générer un code spécifique pour les pièces atelier
+            if asset.category and 'pièce' in asset.category.name.lower():
+                # Pour les pièces atelier, utiliser le code interne
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(asset.internal_code)
+                qr.make(fit=True)
+                
+                # Générer l'image QR code
+                img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Convertir en bytes
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)
+                
+                # Log de génération
+                logger.info(f"QR Code généré pour la pièce atelier {asset.id} ({asset.name}) par {request.user.username}")
+                
+                return Response({
+                    'type': 'qr_code',
+                    'data': buffer.getvalue().hex(),
+                    'asset_id': asset.id,
+                    'asset_name': asset.name,
+                    'category': category_name
+                })
+            else:
+                # Code-barres avec le serial_number pour les autres catégories
+                # Générer le code-barres
+                barcode_class = barcode.get_barcode_class('code128')
+                barcode_instance = barcode_class(asset.serial_number, writer=ImageWriter())
+                
+                # Générer l'image
+                buffer = BytesIO()
+                barcode_instance.write(buffer)
+                buffer.seek(0)
+                
+                # Log de génération
+                logger.info(f"Code-barres généré pour l'asset {asset.id} ({asset.name}) par {request.user.username}")
+                
+                return Response({
+                    'type': 'barcode',
+                    'data': buffer.getvalue().hex(),
+                    'asset_id': asset.id,
+                    'asset_name': asset.name,
+                    'category': category_name
+                })
     
 
 
@@ -352,12 +544,7 @@ def by_category(request):
 
 
 # Vues admin pour QR code et impression
-from django.shortcuts import get_object_or_404, redirect
-from django.http import HttpResponse
-from django.contrib.admin.views.decorators import staff_member_required
-from scanner.models import QRCode
-import tempfile
-import os
+
 
 @staff_member_required
 def generate_qrcode_view(request, asset_id):
@@ -387,31 +574,159 @@ def generate_qrcode_view(request, asset_id):
     # Rediriger vers la page de changement de l'asset
     return redirect(f'/admin/inventory/asset/{asset_id}/change/')
 
+
 @staff_member_required
-def print_label_view(request, asset_id):
-    """Génère un PDF d'étiquette pour impression."""
-    from inventory.models import Asset
+def print_label_pdf_view(request, asset_id):
+    """Génère un PDF d'étiquette pour impression thermique."""
     asset = get_object_or_404(Asset, id=asset_id)
     
-    # Utiliser le service de génération de PDF (à implémenter)
-    # Pour l'instant, on retourne un PDF simple
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import A4
-    from io import BytesIO
-    
+    # Format étiquette thermique (80mm x 50mm)
+    width, height = 80 * mm, 50 * mm
     buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    p.drawString(100, 750, f"Étiquette Asset: {asset.name}")
-    p.drawString(100, 730, f"Code interne: {asset.internal_code}")
-    p.drawString(100, 710, f"Série: {asset.serial_number}")
-    p.drawString(100, 690, f"Catégorie: {asset.category.name if asset.category else 'N/A'}")
-    p.drawString(100, 670, f"Emplacement: {asset.current_location.name if asset.current_location else 'N/A'}")
-    # Ajouter un code-barres ou QR code si disponible
+    p = canvas.Canvas(buffer, pagesize=(width, height))
+    
+    # QR Code
+    try:
+        qr_code = QRCode.objects.get(asset=asset)
+        if qr_code.image:
+            qr_img = ImageReader(qr_code.image.path)
+            p.drawImage(qr_img, 5*mm, 10*mm, width=30*mm, height=30*mm)
+    except QRCode.DoesNotExist:
+        pass
+    
+    # Texte
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(40*mm, 40*mm, asset.name[:30])
+    p.setFont("Helvetica", 8)
+    p.drawString(40*mm, 35*mm, f"S/N: {asset.serial_number}")
+    p.drawString(40*mm, 30*mm, f"ID: {asset.internal_code}")
+    
     p.showPage()
     p.save()
-    
     buffer.seek(0)
+    
     response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="etiquette_asset_{asset.internal_code}.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="label_{asset.id}.pdf"'
     return response
 
+
+# Fonction de génération d'image QR code (utilisée par le signal post_save du modèle QRCode) #
+def generate_qr_image(request, asset_id):
+    """
+    Fonction pour générer l'image QR code à partir d'un objet QRCode.
+    """
+    from inventory.models import Asset
+    asset = get_object_or_404(Asset, id=asset_id)
+    # Générer les données à encoder dans le QR code
+    qr_data = f"{request.scheme}://{request.get_host()}/scan/{asset.id}/"
+    # Générer l'image QR code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    # Générer l'image QR code
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    # Retourner l'image en réponse HTTP
+    Response = HttpResponse(buffer, content_type='image/png')
+    Response['Content-Disposition'] = f'attachment; filename="qr_asset_{asset.internal_code}.png"'
+    return Response
+
+
+class CodePrintView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, asset_id):
+        """Renvoie les codes pour impression."""
+        try:
+            asset = Asset.objects.get(id=asset_id)
+            
+            # Déterminer le type de code selon la catégorie
+            category_name = asset.category.name if asset.category else ""
+            
+            # Règles de génération de codes
+            if category_name in ['Laptop', 'Serveur', 'Switch']:
+                # QR Code avec l'internal_code
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(asset.internal_code)
+                qr.make(fit=True)
+                
+                # Générer l'image QR code
+                img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Convertir en bytes
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)
+                
+                return Response({
+                    'type': 'qr_code',
+                    'data': buffer.getvalue().hex(),
+                    'asset_id': asset.id,
+                    'asset_name': asset.name,
+                    'category': category_name
+                })
+                
+            elif category_name in ['Imprimante', 'NAS', 'Onduleur']:
+                # QR Code avec l'internal_code
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(asset.internal_code)
+                qr.make(fit=True)
+                
+                # Générer l'image QR code
+                img = qr.make_image(fill_color="black", back_color="white")
+                
+                # Convertir en bytes
+                buffer = BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)
+                
+                return Response({
+                    'type': 'qr_code',
+                    'data': buffer.getvalue().hex(),
+                    'asset_id': asset.id,
+                    'asset_name': asset.name,
+                    'category': category_name
+                })
+                
+            else:
+                # Code-barres avec le serial_number pour les autres catégories
+                # Générer le code-barres
+                barcode_class = barcode.get_barcode_class('code128')
+                barcode_instance = barcode_class(asset.serial_number, writer=ImageWriter())
+                
+                # Générer l'image
+                buffer = BytesIO()
+                barcode_instance.write(buffer)
+                buffer.seek(0)
+                
+                return Response({
+                    'type': 'barcode',
+                    'data': buffer.getvalue().hex(),
+                    'asset_id': asset.id,
+                    'asset_name': asset.name,
+                    'category': category_name
+                })
+                
+        except Asset.DoesNotExist:
+            return Response({'error': 'Asset introuvable'}, status=404)
+
+
+
+   

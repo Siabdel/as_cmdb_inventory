@@ -17,9 +17,9 @@
             <i class="bi bi-pencil me-2"></i>
             Modifier
           </router-link>
-          <button class="btn btn-outline-secondary" @click="downloadQR">
-            <i class="bi bi-download me-2"></i>
-            QR Code
+          <button class="btn btn-outline-secondary" @click="generateAndDownloadCode">
+            <i class="bi bi-qrcode me-2"></i>
+            Générer Code
           </button>
         </div>
       </div>
@@ -140,8 +140,31 @@ export default {
       }
     }
 
-    const downloadQR = () => {
-      toast.info('Fonctionnalité en cours de développement')
+    const generateAndDownloadCode = async () => {
+      try {
+        const response = await assetsApi.generateCode(route.params.id)
+        const data = response.data
+        
+        // Créer une URL pour l'image
+        const imageBlob = new Blob([new Uint8Array(Buffer.from(data.data, 'hex'))], { type: 'image/png' })
+        const imageUrl = URL.createObjectURL(imageBlob)
+        
+        // Créer un lien pour le téléchargement
+        const link = document.createElement('a')
+        link.href = imageUrl
+        link.download = `code_${asset.value.name.replace(/\s+/g, '_')}_${data.type}.png`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Révoquer l'URL pour libérer la mémoire
+        URL.revokeObjectURL(imageUrl)
+        
+        toast.success('Code généré et téléchargé avec succès')
+      } catch (error) {
+        console.error('Erreur lors de la génération du code:', error)
+        toast.error('Erreur lors de la génération du code')
+      }
     }
 
     const getStatusClass = (status) => {

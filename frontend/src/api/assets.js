@@ -216,12 +216,19 @@ export const assetsApi = {
   async getCategories() {
     return apiClient.get('/v1/assets/category/')
   },
-
+  
   /**
    * Récupérer la liste des emplacements
    */
   async getLocations() {
     return apiClient.get('/v1/assets/location/')
+  },
+  
+  /**
+   * Générer un code pour un asset
+   */
+  async generateCode(id) {
+    return apiClient.post(`/v1/assets/${id}/generate-code/`)
   }
 }
 

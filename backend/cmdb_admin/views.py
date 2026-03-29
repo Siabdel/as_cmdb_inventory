@@ -10,7 +10,7 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 import json
 
-from inventory.models import Asset, Category, Location
+from inventory.models import Asset, Category, Location, Brand
 from maintenance.models import MaintenanceTicket
 from stock.models import StockItem
 from django.views.generic import ListView
@@ -78,11 +78,34 @@ def asset_list(request):
     """
     assets = Asset.objects.all()
     
+    # Récupérer les assets avec les relations nécessaires pour le frontend
+    assets_data = []
+    for asset in assets:
+        assets_data.append({
+            'id': asset.id,
+            'name': asset.name,
+            'internal_code': asset.internal_code,
+            'category': asset.category.name if asset.category else None,
+            'category_name': asset.category.name if asset.category else '-',
+            'brand': asset.brand.name if asset.brand else None,
+            'brand_name': asset.brand.name if asset.brand else '-',
+            'model': asset.model,
+            'serial_number': asset.serial_number,
+            'status': asset.status,
+            'photo': asset.photo,
+            'location': asset.current_location.name if asset.current_location else None,
+            'location_name': asset.current_location.name if asset.current_location else '-',
+        })
+    
     context = {
         'asset_count': assets.count(),
         'active_assets': assets.filter(status='active').count(),
         'maintenance_count': MaintenanceTicket.objects.count(),
-        'open_tickets': MaintenanceTicket.objects.filter(status='open').count()
+        'open_tickets': MaintenanceTicket.objects.filter(status='open').count(),
+        'assets': assets_data,
+        'categories': [{'id': cat.id, 'name': cat.name} for cat in Category.objects.all()],
+        'brands': [{'id': brand.id, 'name': brand.name} for brand in Brand.objects.all()],
+        'locations': [{'id': loc.id, 'name': loc.name} for loc in Location.objects.all()],
     }
     
     return render(request, 'admin/assets/list.html', context)

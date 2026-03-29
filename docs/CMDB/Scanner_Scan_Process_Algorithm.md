@@ -385,3 +385,87 @@ Le bouton fonctionne correctement :
 - **Oui**, le système est conçu pour gérer les deux types de scans de manière transparente
 
 Le workflow est bien structuré pour permettre le passage entre les modes et le traitement des scans dans le backend.
+
+----
+
+
+
+
+
+## Solution complète : Ajout de la logique de capture USB et traitement backend
+
+J'ai corrigé le problème de l'interface admin qui ne traitait pas les scans via USB. Voici les modifications apportées :
+
+### 1. **Ajout du buffer USB** :
+```javascript
+// Dans la fonction data()
+usbScanBuffer: '',
+usbScanTimeout: null,
+```
+
+### 2. **Méthode de capture complète de l'entrée USB** :
+```javascript
+handleKeyboardInput(event) {
+    // Pour les scanners USB, on capture l'entrée complète
+    if (this.scannerType !== 'usb') return;
+    
+    // Si c'est une touche de retour à la ligne, on traite l'entrée
+    if (event.key === 'Enter') {
+        // Traiter l'entrée complète
+        this.processUSBInput(this.usbScanBuffer);
+        this.usbScanBuffer = '';
+        event.preventDefault();
+    } else if (event.key.length === 1) {
+        // Accumuler les caractères
+        this.usbScanBuffer += event.key;
+        // Réinitialiser le timeout
+        clearTimeout(this.usbScanTimeout);
+        // Définir un timeout pour traiter l'entrée après un délai
+        this.usbScanTimeout = setTimeout(() => {
+            this.processUSBInput(this.usbScanBuffer);
+            this.usbScanBuffer = '';
+        }, 100); // Délai de 100ms pour finir l'entrée
+    }
+},
+```
+
+### 3. **Méthode de traitement de l'entrée USB** :
+```javascript
+processUSBInput(input) {
+    if (input && input.length > 2) {
+        console.log('Traitement de l\'entrée USB:', input);
+        // Appeler la méthode de traitement comme pour les QR codes
+        this.handleScanResult(input);
+    }
+},
+```
+
+### 4. **Amélioration du cycle de vie** :
+```javascript
+updated() {
+    // Réinitialiser l'écouteur lors des mises à jour
+    this.setupKeyboardListener();
+},
+```
+
+## Résultat :
+
+**Avant** : Le scanner USB capturait les caractères mais ne déclenchait pas le traitement backend (`resolve_qr`)
+
+**Après** : 
+1. Le scanner USB émule le clavier et envoie les caractères
+2. Le JavaScript capture l'entrée complète (avec timeout pour finir l'entrée)
+3. L'entrée est traitée via `handleScanResult` 
+4. `handleScanResult` appelle le backend via l'API `/scanner/scan/<uuid>/`
+5. Le backend traite le scan via `resolve_qr` 
+6. Les résultats sont affichés dans l'interface admin
+
+## Workflow complet corrigé :
+
+1. **Scan USB** → Scanner envoie les caractères via clavier
+2. **Capture** → JavaScript capture l'entrée complète
+3. **Traitement** → `processUSBInput` → `handleScanResult` → API `/scanner/scan/<uuid>/`
+4. **Backend** → `resolve_qr` traite le scan
+5. **Affichage** → Résultats affichés dans `index.html`
+
+Le workflow est maintenant complet et fonctionnel pour les scans via USB.

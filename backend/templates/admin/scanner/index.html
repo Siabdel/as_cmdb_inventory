@@ -6,133 +6,190 @@
 
 {% block extra_css %}
 <link href="{% static 'admin_cmdb/css/scanner.css' %}" rel="stylesheet">
+<style>
+    .scanner-mode-selector {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .mode-btn {
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .mode-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.4);
+    }
+    .mode-btn.active {
+        background: rgba(37, 99, 235, 0.2);
+        border-color: var(--accent);
+        color: var(--text-main);
+    }
+    .usb-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+    .usb-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    .scan-debug {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        font-family: monospace;
+        font-size: 0.85rem;
+        margin-top: 16px;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .scan-debug-item {
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .scan-debug-item:last-child { border-bottom: none; }
+    .scan-debug-item.success { color: #22c55e; }
+    .scan-debug-item.error { color: #ef4444; }
+    .scan-debug-item.info { color: #3b82f6; }
+    .camera-wrapper {
+        position: relative;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #000;
+        aspect-ratio: 4/3;
+        margin-bottom: 20px;
+    }
+    #camera-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div id="scanner-app" class="scanner-container">
+<div id="scanner-app">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1">📷 Scanner QR Code ou Code à Barres</h2>
-            <p class="text-muted mb-0">Scannez un QR code ou un code à barres pour accéder à la fiche asset</p>
-            <p class="text-info">[[ msg ]]</p>
+            <h2 class="mb-1">📷 Scanner QR / Code-Barres</h2>
+            <p class="text-muted mb-0">[[ msg ]]</p>
         </div>
         <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="continuous-scan" v-model="continuousScan">
-            <label class="form-check-label text-muted" for="continuous-scan">Scan continu</label>
+            <input class="form-check-input" type="checkbox" 
+                   id="continuous-scan" v-model="continuousScan">
+            <label class="form-check-label text-muted" for="continuous-scan">
+                Scan continu
+            </label>
         </div>
     </div>
 
-    <!-- Scanner Type Selection -->
-    <div class="scanner-type-selector mb-4">
-        <div class="btn-group" role="group">
-            <button
-                type="button"
-                class="btn btn-outline-primary"
-                :class="{ active: scannerType === 'webcam' }"
-                @click="scannerType = 'webcam'"
-            >
-                Caméra Web
-            </button>
-            <button
-                type="button"
-                class="btn btn-outline-success"
-                :class="{ active: scannerType === 'usb' }"
-                @click="scannerType = 'usb'"
-            >
-                Scanner USB
-            </button>
+    <!-- Mode Selector -->
+    <div class="scanner-mode-selector">
+        <div class="mode-btn" :class="{ active: scannerType === 'webcam' }" 
+             @click="switchScannerType('webcam')">
+            <i class="bi bi-camera"></i>
+            <div class="mt-1">Caméra Web</div>
+        </div>
+        <div class="mode-btn" :class="{ active: scannerType === 'usb' }" 
+             @click="switchScannerType('usb')">
+            <i class="bi bi-keyboard"></i>
+            <div class="mt-1">Scanner USB</div>
         </div>
     </div>
 
-    <!-- Camera View -->
-    <div class="camera-wrapper" v-show="cameraActive && scannerType === 'webcam'">
-        <video id="camera-preview" autoplay playsinline></video>
-        <div id="scan-overlay">
-            <div class="scan-frame">
-                <div class="scan-line"></div>
+    <!-- USB Status -->
+    <div class="usb-status" v-if="scannerType === 'usb'">
+        <div class="usb-status-dot"></div>
+        <div>
+            <strong class="text-white">Mode Scanner USB Actif</strong>
+            <div class="text-muted small">
+                Buffer: [[ usbBuffer ]] ([[ usbBuffer.length ]] chars, [[ keyCount ]] touches)
             </div>
         </div>
     </div>
 
-    <!-- USB Scanner Instructions -->
-    <div class="usb-scanner-instructions card-cmdb" v-if="scannerType === 'usb' && !scanResult">
-        <i class="bi bi-keyboard"></i>
-        <h4 class="text-white mb-3">Scanner USB Honeywell</h4>
-        <p class="text-white mb-4">Connectez votre scanner USB Honeywell et scannez directement les QR codes</p>
-        <p class="text-white mb-4">Les scanners Honeywell émulent le clavier, vous pouvez scanner directement dans le champ ci-dessous</p>
+    <!-- Camera View (Webcam mode only) -->
+    <div class="camera-wrapper" v-show="scannerType === 'webcam' && cameraActive">
+        <video id="camera-preview" autoplay playsinline></video>
     </div>
 
-    <!-- Permission Request -->
-    <div class="camera-permission card-cmdb" v-if="!cameraActive && !scanResult && scannerType === 'webcam'">
+    <!-- USB Instructions -->
+    <div class="card-cmdb p-4" v-if="scannerType === 'usb' && !scanResult">
+        <div class="text-center">
+            <i class="bi bi-keyboard" style="font-size: 3rem; color: var(--accent);"></i>
+            <h4 class="text-white mt-3">Scanner USB HoneyWell</h4>
+            <p class="text-muted">
+                Connectez votre scanner USB et scannez un code QR ou code-barres
+            </p>
+            <div class="alert alert-info bg-dark border-secondary text-muted">
+                <i class="bi bi-info-circle"></i>
+                Le scanner émule le clavier - Aucun pilote requis
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Request (Webcam) -->
+    <div class="camera-permission card-cmdb" v-if="scannerType === 'webcam' && !cameraActive && !scanResult">
         <i class="bi bi-camera"></i>
         <h4 class="text-white mb-3">Accès caméra requis</h4>
         <p class="text-muted mb-4">Autorisez l'accès à la caméra pour scanner les QR codes</p>
-        <button class="btn btn-primary btn-scan-primary" @click="startCamera">
+        <button class="btn btn-primary" @click="startCamera">
             🎥 Activer la caméra
         </button>
     </div>
 
-    <!-- Scanner Controls -->
-    <div class="scanner-controls" v-if="cameraActive && scannerType === 'webcam'">
-        <button class="btn btn-scan btn-scan-primary" @click="toggleCamera">
-            [[ cameraActive ? '⏸️ Pause' : '▶️ Reprendre' ]]
-        </button>
-        <button class="btn btn-scan btn-scan-secondary" @click="stopCamera">
-            ⏹️ Arrêter
-        </button>
-        <button class="btn btn-scan btn-scan-secondary" @click="showManualSearch = true">
-            🔍 Recherche manuelle
-        </button>
-    </div>
-
     <!-- Scan Result -->
-    <div class="scan-result-card" v-if="scanResult" style="background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.2); padding: 20px; margin-top: 20px;">
+    <div class="scan-result-card" v-if="scanResult">
         <div class="scan-result-header">
-            <img :src="scanResult.photo || '/static/admin_cmdb/img/no-image.png'"
+            <img :src="scanResult.photo || '/static/admin_cmdb/img/no-image.png'" 
                  class="scan-result-thumb" alt="[[ scanResult.name ]]">
             <div class="scan-result-info">
                 <h3 class="text-white">[[ scanResult.name ]]</h3>
-                <p class="text-white">S/N: [[ scanResult.serial_number ]] • [[ scanResult.category_name ]]</p>
-                <p class="text-white">📍 [[ scanResult.location_name || 'Non localisé' ]]</p>
+                <p>S/N: [[ scanResult.serial_number ]] • [[ scanResult.category_name ]]</p>
+                <p>📍 [[ scanResult.location_name || 'Non localisé' ]]</p>
             </div>
             <div class="ms-auto">
-                <span class="status-badge" :class="getStatusClass(scanResult.status)" style="background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 8px;">
+                <span class="status-badge" :class="getStatusClass(scanResult.status)">
                     [[ scanResult.status ]]
                 </span>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-dark table-borderless mb-0">
-                    <tr><td class="text-muted">Marque</td><td>[[ scanResult.brand_name ]]</td></tr>
-                    <tr><td class="text-muted">Modèle</td><td>[[ scanResult.model || '-' ]]</td></tr>
-                    <tr><td class="text-muted">Garantie</td><td>[[ formatDate(scanResult.warranty_end) ]]</td></tr>
-                </table>
-            </div>
-            <div class="col-md-6">
-                <table class="table table-dark table-borderless mb-0">
-                    <tr><td class="text-muted">Assigné à</td><td>[[ scanResult.assigned_to || 'Non assigné' ]]</td></tr>
-                    <tr><td class="text-muted">Dernier scan</td><td>[[ formatDate(scanResult.last_scan) ]]</td></tr>
-                </table>
-            </div>
-        </div>
-
         <!-- Quick Actions -->
         <div class="quick-actions">
-            <a href="#" class="quick-action-btn" :disabled="!scanResult">
+            <a :href="'/admin/tickets/new/?asset=' + scanResult.id" class="quick-action-btn">
                 <i>🔧</i>
                 <span>Créer Ticket</span>
             </a>
-            <a href="#" class="quick-action-btn" :disabled="!scanResult">
+            <a :href="'/admin/assets/' + scanResult.id + '/'" class="quick-action-btn">
                 <i>👁️</i>
                 <span>Voir Fiche</span>
             </a>
-            <button class="quick-action-btn" @click="showMoveModal = true" :disabled="!scanResult">
+            <button class="quick-action-btn" @click="showMoveModal = true">
                 <i>📍</i>
                 <span>Déplacer</span>
             </button>
-            <button class="quick-action-btn" @click="scanResult = null; startCamera()">
+            <button class="quick-action-btn" @click="scanResult = null">
                 <i>🔄</i>
                 <span>Nouveau Scan</span>
             </button>
@@ -140,47 +197,28 @@
     </div>
 
     <!-- Scan History -->
-    <!-- <div class="scan-history" v-if="scanHistory.length > 0">
+    <div class="scan-history" v-if="scanHistory.length > 0">
         <h6>📜 Historique des scans</h6>
-        <div class="scan-history-item"
-             v-for="(scan, index) in scanHistory"
+        <div class="scan-history-item" 
+             v-for="(scan, index) in scanHistory" 
              :key="index"
-             @click="loadScanFromHistory(scan)">
+             @click="loadScanResult(scan.uuid)">
             <div>
-                <div class="text-white">[[ scan?.asset_name || 'Asset sans nom' ]]</div>
-                <small class="text-muted">[[ formatDate(scan?.scanned_at || '-') ]]</small>
+                <div class="text-white">[[ scan.asset_name ]]</div>
+                <small class="text-muted">[[ formatDate(scan.scanned_at) ]]</small>
             </div>
             <i class="bi bi-chevron-right text-muted"></i>
         </div>
-    </div> -->
+    </div>
 
-    <!-- Manual Search Modal -->
-    <div class="modal fade" id="manualSearchModal" tabindex="-1" v-show="showManualSearch">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">🔍 Recherche manuelle</h5>
-                    <button type="button" class="btn-close btn-close-white" @click="showManualSearch = false"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control bg-dark border-secondary text-white mb-3"
-                           placeholder="Numéro de série ou nom d'asset"
-                           v-model="manualSearchQuery"
-                           @keyup.enter="manualSearch">
-                    <div v-if="manualSearchResults.length > 0">
-                        <div class="scan-history-item"
-                             v-for="asset in manualSearchResults"
-                             :key="asset.id"
-                             @click="selectManualResult(asset)">
-                            <div>
-                                <div class="text-white">[[ asset.name ]]</div>
-                                <small class="text-muted">S/N: [[ asset.serial_number ]]</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Debug Console -->
+    <div class="scan-debug">
+        <div class="text-muted mb-2">🔍 Debug Console</div>
+        <div class="scan-debug-item info">Mode: [[ scannerType ]]</div>
+        <div class="scan-debug-item info">Buffer: [[ usbBuffer ]] ([[ usbBuffer.length ]] chars)</div>
+        <div class="scan-debug-item info">Touches: [[ keyCount ]]</div>
+        <div class="scan-debug-item info">Écouteur: [[ isListening ? 'Actif ✓' : 'Inactif ✗' ]]</div>
+        <div class="scan-debug-item info">Délai: [[ USB_SCAN_DELAY ]] ms</div>
     </div>
 
     <!-- Move Modal -->
@@ -194,7 +232,7 @@
                 <div class="modal-body">
                     <select class="form-select bg-dark border-secondary text-white" v-model="moveLocation">
                         <option value="">Sélectionner une localisation</option>
-                        <option v-for="loc in locations" :key="loc?.id" :value="loc?.id" v-if="loc">
+                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
                             [[ loc.name ]]
                         </option>
                     </select>
@@ -212,4 +250,5 @@
 {% block extra_js %}
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="{% static 'admin_cmdb/js/scanner.js' %}"></script>
-{% endblock %}
+{% endblock %}  
+

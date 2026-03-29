@@ -1,0 +1,92 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Impression Étiquettes - CMDB{% endblock %}
+
+{% block extra_css %}
+<style>
+    .printer-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .printer-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    .status-online { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .status-offline { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="print-app">
+    <h2 class="mb-4">🖨️ Impression Étiquettes</h2>
+    
+    <!-- Printer Selection -->
+    <div class="printer-card">
+        <h5 class="mb-3">Sélectionner Imprimante</h5>
+        <div class="row g-3">
+            <div class="col-md-4" v-for="printer in printers" :key="printer.id">
+                <div class="card h-100" :class="{ 'border-primary': selectedPrinter === printer.id }"
+                     @click="selectedPrinter = printer.id" style="cursor: pointer;">
+                    <div class="card-body">
+                        <h6 class="card-title">[[ printer.name ]]</h6>
+                        <p class="card-text text-muted small">
+                            [[ printer.connection_type ]] • [[ printer.paper_width_mm ]]x[[ printer.paper_height_mm ]]mm
+                        </p>
+                        <span class="printer-status" :class="printer.is_active ? 'status-online' : 'status-offline'">
+                            <span class="dot" style="width:8px;height:8px;border-radius:50%;background:currentcolor;"></span>
+                            [[ printer.is_active ? 'En ligne' : 'Hors ligne' ]]
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Print Options -->
+    <div class="printer-card">
+        <h5 class="mb-3">Options d'Impression</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Template</label>
+                <select class="form-select bg-dark border-secondary text-white" v-model="selectedTemplate">
+                    <option v-for="t in templates" :key="t.id" :value="t.id">[[ t.name ]]</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Copies</label>
+                <input type="number" class="form-control bg-dark border-secondary text-white" v-model="copies" min="1" max="10">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Assets sélectionnés</label>
+                <input type="text" class="form-control bg-dark border-secondary text-white" :value="assetIds.length" readonly>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="d-flex gap-3">
+        <button class="btn btn-primary" @click="testPrint" :disabled="!selectedPrinter">
+            🧪 Tester Imprimante
+        </button>
+        <button class="btn btn-success" @click="printLabels" :disabled="!selectedPrinter || assetIds.length === 0">
+            🖨️ Imprimer Étiquettes
+        </button>
+        <button class="btn btn-outline-light" @click="downloadPDF">
+            📥 Télécharger PDF
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin_cmdb/js/printer.js' %}"></script>
+{% endblock %}

@@ -2,12 +2,13 @@ from django import template
 
 register = template.Library()
 
-@register.filter(name='length_minus')
-def length_minus(value, arg):
+@register.filter
+def formatCurrency(value):
+    """Formate un nombre en devise (ex: 1234.56 → 1 234,56 €)."""
     try:
-        return len(value) - int(arg)
+        return f"{float(value):,.2f} €".replace(",", " ").replace(".", ",")
     except (ValueError, TypeError):
-        return 0
+        return value
 
 @register.simple_tag
 def add(value, arg):
@@ -40,3 +41,31 @@ def multiply(value, arg):
         return float(value) * float(arg)
     except (ValueError, TypeError):
         return 0
+
+@register.filter(name='divide')
+def divide_filter(value, arg):
+    """Divise deux nombres."""
+    try:
+        return float(value) / float(arg) if float(arg) != 0 else 0
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def getMovementTypeLabel(value):
+    """Retourne le libellé du type de mouvement."""
+    labels = {
+        'entry': 'Entrée',
+        'exit': 'Sortie',
+        'transfer': 'Transfert',
+        'repair': 'Réparation',
+        'maintenance': 'Maintenance',
+    }
+    return labels.get(value, value)
+
+@register.filter
+def formatDate(value):
+    """Formate une date."""
+    try:
+        return value.strftime('%Y-%m-%d %H:%M:%S')
+    except (AttributeError, TypeError):
+        return value
