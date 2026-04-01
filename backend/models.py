@@ -45,6 +45,9 @@ class Asset(models.Model):
             self.generate_qrcode()
         if not self.barcode:
             self.generate_barcode()
+        
+        # Sauvegarder les modifications
+        super().save(*args, **kwargs)
 
     def generate_qrcode(self):
         """
@@ -66,6 +69,7 @@ class Asset(models.Model):
 
         filename = f'asset_{self.id}_qrcode.png'
         self.qr_code.save(filename, File(buffer), save=False)
+        # Sauvegarder l'asset pour enregistrer le QR code
         self.save(update_fields=['qr_code'])
 
     def generate_barcode(self):
@@ -82,6 +86,7 @@ class Asset(models.Model):
 
         filename = f'asset_{self.id}_barcode.png'
         self.barcode.save(filename, File(buffer), save=False)
+        # Sauvegarder l'asset pour enregistrer le code-barres
         self.save(update_fields=['barcode'])
 
     def get_qrcode_url(self):

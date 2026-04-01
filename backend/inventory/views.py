@@ -397,6 +397,17 @@ class AssetMovementViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'head', 'options']  # pas de PUT/DELETE
 
 
+class AssetMovementDetailView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, pk=None):
+        """Détail d'un mouvement spécifique."""
+        movement = get_object_or_404(AssetMovement.objects.select_related(
+            'asset', 'from_location', 'to_location'
+        ), pk=pk)
+        serializer = AssetMovementSerializer(movement)
+        return Response(serializer.data)    
+
 class DashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -466,6 +477,18 @@ class AssetListView(viewsets.ViewSet):
             'category__name', 'category__icon'
         ).annotate(count=Count('id')).order_by('-count')
         return Response({'categories': list(data)})
+
+class AssetDetailView(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, pk=None):
+        """Détail d'un asset spécifique."""
+        asset = get_object_or_404(Asset.objects.select_related(
+            'category', 'brand', 'current_location'
+        ).prefetch_related('tags', 'movements'), pk=pk)
+        serializer = AssetDetailSerializer(asset)
+        return Response(serializer.data)
+    
 
 class AssetByLocationView(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -544,189 +567,6 @@ def by_category(request):
 
 
 # Vues admin pour QR code et impression
-
-
-@staff_member_required
-def generate_qrcode_view(request, asset_id):
-    """Génère un QR code pour un asset et le sauvegarde."""
-    from inventory.models import Asset
-    asset = get_object_or_404(Asset, id=asset_id)
-    
-    # Vérifier si un QRCode existe déjà
-    qr, created = QRCode.objects.get_or_create(asset=asset)
-    
-    # Générer l'image QR
-    try:
-        from barcode_service import generate_qrcode_image
-        data = f"{request.scheme}://{request.get_host()}/scan/{qr.uuid_token}/"
-        buffer = generate_qrcode_image(data, size=12, border=2)
-        
-        # Sauvegarder l'image dans le modèle
-        from django.core.files.base import ContentFile
-        filename = f"qr_{asset.internal_code}.png"
-        qr.image.save(filename, ContentFile(buffer.getvalue()), save=True)
-        qr.url = data
-        qr.save()
-    except ImportError:
-        # Si le service n'est pas disponible, on crée juste l'objet sans image
-        pass
-    
-    # Rediriger vers la page de changement de l'asset
-    return redirect(f'/admin/inventory/asset/{asset_id}/change/')
-
-
-@staff_member_required
-def print_label_pdf_view(request, asset_id):
-    """Génère un PDF d'étiquette pour impression thermique."""
-    asset = get_object_or_404(Asset, id=asset_id)
-    
-    # Format étiquette thermique (80mm x 50mm)
-    width, height = 80 * mm, 50 * mm
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=(width, height))
-    
-    # QR Code
-    try:
-        qr_code = QRCode.objects.get(asset=asset)
-        if qr_code.image:
-            qr_img = ImageReader(qr_code.image.path)
-            p.drawImage(qr_img, 5*mm, 10*mm, width=30*mm, height=30*mm)
-    except QRCode.DoesNotExist:
-        pass
-    
-    # Texte
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(40*mm, 40*mm, asset.name[:30])
-    p.setFont("Helvetica", 8)
-    p.drawString(40*mm, 35*mm, f"S/N: {asset.serial_number}")
-    p.drawString(40*mm, 30*mm, f"ID: {asset.internal_code}")
-    
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-    
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="label_{asset.id}.pdf"'
-    return response
-
-
-# Fonction de génération d'image QR code (utilisée par le signal post_save du modèle QRCode) #
-def generate_qr_image(request, asset_id):
-    """
-    Fonction pour générer l'image QR code à partir d'un objet QRCode.
-    """
-    from inventory.models import Asset
-    asset = get_object_or_404(Asset, id=asset_id)
-    # Générer les données à encoder dans le QR code
-    qr_data = f"{request.scheme}://{request.get_host()}/scan/{asset.id}/"
-    # Générer l'image QR code
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    # Générer l'image QR code
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    buffer.seek(0)
-    # Retourner l'image en réponse HTTP
-    Response = HttpResponse(buffer, content_type='image/png')
-    Response['Content-Disposition'] = f'attachment; filename="qr_asset_{asset.internal_code}.png"'
-    return Response
-
-
-class CodePrintView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request, asset_id):
-        """Renvoie les codes pour impression."""
-        try:
-            asset = Asset.objects.get(id=asset_id)
-            
-            # Déterminer le type de code selon la catégorie
-            category_name = asset.category.name if asset.category else ""
-            
-            # Règles de génération de codes
-            if category_name in ['Laptop', 'Serveur', 'Switch']:
-                # QR Code avec l'internal_code
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(asset.internal_code)
-                qr.make(fit=True)
-                
-                # Générer l'image QR code
-                img = qr.make_image(fill_color="black", back_color="white")
-                
-                # Convertir en bytes
-                buffer = BytesIO()
-                img.save(buffer, format='PNG')
-                buffer.seek(0)
-                
-                return Response({
-                    'type': 'qr_code',
-                    'data': buffer.getvalue().hex(),
-                    'asset_id': asset.id,
-                    'asset_name': asset.name,
-                    'category': category_name
-                })
-                
-            elif category_name in ['Imprimante', 'NAS', 'Onduleur']:
-                # QR Code avec l'internal_code
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(asset.internal_code)
-                qr.make(fit=True)
-                
-                # Générer l'image QR code
-                img = qr.make_image(fill_color="black", back_color="white")
-                
-                # Convertir en bytes
-                buffer = BytesIO()
-                img.save(buffer, format='PNG')
-                buffer.seek(0)
-                
-                return Response({
-                    'type': 'qr_code',
-                    'data': buffer.getvalue().hex(),
-                    'asset_id': asset.id,
-                    'asset_name': asset.name,
-                    'category': category_name
-                })
-                
-            else:
-                # Code-barres avec le serial_number pour les autres catégories
-                # Générer le code-barres
-                barcode_class = barcode.get_barcode_class('code128')
-                barcode_instance = barcode_class(asset.serial_number, writer=ImageWriter())
-                
-                # Générer l'image
-                buffer = BytesIO()
-                barcode_instance.write(buffer)
-                buffer.seek(0)
-                
-                return Response({
-                    'type': 'barcode',
-                    'data': buffer.getvalue().hex(),
-                    'asset_id': asset.id,
-                    'asset_name': asset.name,
-                    'category': category_name
-                })
-                
-        except Asset.DoesNotExist:
-            return Response({'error': 'Asset introuvable'}, status=404)
-
 
 
    

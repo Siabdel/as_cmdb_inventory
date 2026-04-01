@@ -59,7 +59,18 @@ LOCAL_APPS = [
     'maintenance',
     'scanner.apps.ScannerConfig',  # ← important pour le ready()
     'cmdb_admin',
+    'printer',  # ← NOUVELLE APP
 ]
+
+# Configuration printer
+PRINTER_SETTINGS = {
+    'DEFAULT_MODEL': 'bixolon_srp350',
+    'MAX_COPIES': 5,
+    'USB_TIMEOUT_MS': 5000,
+    'LOG_PRINT_JOBS': True,  # Historiser les impressions ?
+}
+# URL de base pour QR Codes (utilisé par le serializer)
+CMDB_BASE_URL = 'http://cmdb.local'  # ou os.getenv('CMDB_BASE_URL')
 
 # URL de base encodée dans le QR (à adapter en prod)
 QR_CODE_BASE_URL = os.environ.get('INVENTORY_QR_CODE_BASE_URL', 'http://localhost:8000')

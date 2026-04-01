@@ -6,7 +6,7 @@ from scanner.models import QRCode
 
 
 class AssetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'category', 'brand', 'model', 'serial_number', 'purchase_date', 'purchase_price', 'warranty_end', 'current_location', 'assigned_to', 'status', 'condition_state', 'qr_code_preview')
+    list_display = ('internal_code', 'name', 'category', 'brand', 'model', 'serial_number', 'purchase_date', 'purchase_price', 'warranty_end', 'current_location', 'assigned_to', 'status', 'condition_state', 'qr_code_preview')
     list_filter = ('category', 'brand', 'current_location', 'status', 'condition_state')
     search_fields = ('name', 'serial_number', 'model', 'internal_code')
     raw_id_fields = ('category', 'brand', 'current_location')

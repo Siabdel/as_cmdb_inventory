@@ -8,12 +8,38 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.views.generic import DetailView
 import json
 
 from inventory.models import Asset, Category, Location, Brand
 from maintenance.models import MaintenanceTicket
 from stock.models import StockItem
 from django.views.generic import ListView
+from django.http import HttpResponse
+
+
+def print_asset_label(request, asset_id):
+    """
+    Vue pour imprimer l'étiquette d'un asset.
+    
+    Args:
+        request: Requête HTTP
+        asset_id (int): ID de l'asset
+    
+    Returns:
+        HttpResponse: PDF de l'étiquette
+    """
+    from inventory.models import Asset
+    asset = get_object_or_404(Asset, id=asset_id)
+    from cmdb_admin import barcode_service as br_service
+    pdf_path = br_service.generate_label_pdf(asset)
+    
+    # Lire le fichier PDF et le renvoyer
+    with open(pdf_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="asset_{asset_id}_label.pdf"'
+        return response
 
 
 class StockView(ListView):
@@ -145,4 +171,39 @@ def admin_dashboard_view(request):
     Vue protégée pour le dashboard admin
     """
     return render(request, 'admin/dashboard.html')
+
+
+class AssetDetailView(DetailView):
+    """
+    Vue de détail pour un asset
+    """
+    model = Asset
+    template_name = 'admin/assets/detail.html'
+    context_object_name = 'asset'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Ajouter les champs supplémentaires nécessaires au template
+        asset = self.object
+        context['asset'] = {
+            'id': asset.id,
+            'name': asset.name,
+            'internal_code': asset.internal_code,
+            'category': asset.category.name if asset.category else None,
+            'category_name': asset.category.name if asset.category else '-',
+            'brand': asset.brand.name if asset.brand else None,
+            'brand_name': asset.brand.name if asset.brand else '-',
+            'model': asset.model,
+            'serial_number': asset.serial_number,
+            'status': asset.status,
+            'photo': asset.photo,
+            'current_location': asset.current_location.name if asset.current_location else None,
+            'current_location_name': asset.current_location.name if asset.current_location else '-',
+            'warranty_end': asset.warranty_end,
+            'purchase_date': asset.purchase_date,
+            'description': asset.description,
+            'created_at': asset.created_at,
+            'updated_at': asset.updated_at,
+        }
+        return context
 

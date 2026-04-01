@@ -1,6 +1,10 @@
 # 📋 Rapport d'Architecture — Framework Multi-Business Django/DRF
 
-> prompt: ecrire un cheat-sheet  MD une synthezes des cmd curl passer dans cette tache 
+> prompt: quels sont les autres models mistral ou Deepseek ou kimi  a installer en locale 
+> openai-compatible , avec  ID Hugging Face valide.ou  ollama pour Roo code /VSC a installer en local , experte en python/Django/vue.js et en mode "code" , "agent"  utilise  outils edit_file, run_terminal_cmd s
+> le plus fiable pour mon  RTX 3060 GPU 12GB . 
+> et qui sont Workflow agentic, tool-calling, stack technique
+> faite moi un analyse profonde et un tableau de synthese 
 
 ## **Core Inventory & Workflow Framework (CIWF)**
 

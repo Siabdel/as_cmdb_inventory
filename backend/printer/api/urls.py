@@ -1,8 +1,9 @@
-# backend/scanner/api/urls.py
+
+
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from scanner.views import PrinterViewSet, print_labels
-from scanner.api.views import PrintTemplateViewSet, PrintJobViewSet, PrintLogViewSet
+from printer.views import PrintTemplateViewSet, PrintJobViewSet, PrintLogViewSet
 
 router = DefaultRouter()
 router.register(r'printers', PrinterViewSet, basename='printer')

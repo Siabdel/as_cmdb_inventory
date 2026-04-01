@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import QRCode
-from barcode_service import generate_qrcode_image
+from backend.cmdb_admin.barcode_service import generate_qrcode_image
 from django.core.files import File
 from io import BytesIO
 

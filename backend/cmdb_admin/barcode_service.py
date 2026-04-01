@@ -28,21 +28,29 @@ def generate_qrcode_image(data, size=10, border=4):
     Returns:
         BytesIO: Buffer contenant l'image PNG
     """
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=size,
-        border=border,
-    )
-    qr.add_data(data)
-    qr.make(fit=True)
+    import logging
+    logger = logging.getLogger(__name__)
     
-    img = qr.make_image(fill_color="black", back_color="white")
-    buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    buffer.seek(0)
-    
-    return buffer
+    try:
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=size,
+            border=border,
+        )
+        qr.add_data(data)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        
+        logger.debug(f"QR code généré avec succès pour les données: {data}")
+        return buffer
+    except Exception as e:
+        logger.error(f"Erreur lors de la génération du QR code: {e}")
+        raise
 
 
 def generate_barcode_image(data, writer_options=None):
@@ -56,6 +64,9 @@ def generate_barcode_image(data, writer_options=None):
     Returns:
         BytesIO: Buffer contenant l'image PNG
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if writer_options is None:
         writer_options = {
             'module_height': 15.0,
@@ -64,12 +75,17 @@ def generate_barcode_image(data, writer_options=None):
             'quiet_zone': 6.5,
         }
     
-    barcode = Code128(data, writer=ImageWriter())
-    buffer = BytesIO()
-    barcode.write(buffer, writer_options)
-    buffer.seek(0)
-    
-    return buffer
+    try:
+        barcode = Code128(data, writer=ImageWriter())
+        buffer = BytesIO()
+        barcode.write(buffer, writer_options)
+        buffer.seek(0)
+        
+        logger.debug(f"Code-barres généré avec succès pour les données: {data}")
+        return buffer
+    except Exception as e:
+        logger.error(f"Erreur lors de la génération du code-barres: {e}")
+        raise
 
 
 def save_qrcode_to_asset(asset, data=None):
@@ -83,18 +99,32 @@ def save_qrcode_to_asset(asset, data=None):
     Returns:
         str: Chemin du fichier sauvegardé
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if data is None:
         data = asset.code
     
-    buffer = generate_qrcode_image(data)
-    
-    filename = f'asset_{asset.id}_qrcode.png'
-    file_path = os.path.join('qrcodes', filename)
-    
-    # Sauvegarder le fichier
-    asset.qr_code.save(filename, File(buffer), save=False)
-    
-    return file_path
+    try:
+        buffer = generate_qrcode_image(data)
+        
+        filename = f'asset_{asset.id}_qrcode.png'
+        file_path = os.path.join(settings.MEDIA_ROOT, 'qrcodes', filename)
+        
+        # Vérifier que le dossier de destination existe
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # Sauvegarder le fichier
+        asset.qr_code.save(filename, File(buffer), save=False)
+        
+        # Sauvegarder l'asset pour enregistrer le QR code
+        asset.save(update_fields=['qr_code'])
+        
+        logger.info(f"QR code sauvegardé avec succès pour l'asset {asset.id}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Erreur lors de la sauvegarde du QR code pour l'asset {asset.id}: {e}")
+        raise
 
 
 def save_barcode_to_asset(asset, data=None):
@@ -108,18 +138,32 @@ def save_barcode_to_asset(asset, data=None):
     Returns:
         str: Chemin du fichier sauvegardé
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if data is None:
         data = asset.code
     
-    buffer = generate_barcode_image(data)
-    
-    filename = f'asset_{asset.id}_barcode.png'
-    file_path = os.path.join('barcodes', filename)
-    
-    # Sauvegarder le fichier
-    asset.barcode.save(filename, File(buffer), save=False)
-    
-    return file_path
+    try:
+        buffer = generate_barcode_image(data)
+        
+        filename = f'asset_{asset.id}_barcode.png'
+        file_path = os.path.join(settings.MEDIA_ROOT, 'barcodes', filename)
+        
+        # Vérifier que le dossier de destination existe
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # Sauvegarder le fichier
+        asset.barcode.save(filename, File(buffer), save=False)
+        
+        # Sauvegarder l'asset pour enregistrer le code-barres
+        asset.save(update_fields=['barcode'])
+        
+        logger.info(f"Code-barres sauvegardé avec succès pour l'asset {asset.id}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Erreur lors de la sauvegarde du code-barres pour l'asset {asset.id}: {e}")
+        raise
 
 
 def generate_label_pdf(asset, output_path=None):
@@ -147,20 +191,20 @@ def generate_label_pdf(asset, output_path=None):
     
     # Code
     c.setFont("Helvetica", 9)
-    c.drawString(10, height - 40, f"Code: {asset.code}")
+    c.drawString(10, height - 40, f"Code: {asset.internal_code}")
     
     # Localisation
-    if asset.location:
-        c.drawString(10, height - 55, f"Localisation: {asset.location}")
+    if asset.current_location:
+        c.drawString(10, height - 55, f"Localisation: {asset.current_location}")
     
     # Date de création
     created_str = asset.created_at.strftime("%d/%m/%Y")
     c.drawString(10, height - 70, f"Créé le: {created_str}")
     
     # QR Code (si disponible)
-    if asset.qr_code:
+    if hasattr(asset, 'qrcode') and asset.qrcode and asset.qrcode.image:
         try:
-            qr_path = asset.qr_code.path
+            qr_path = asset.qrcode.image.path
             if os.path.exists(qr_path):
                 qr_img = ImageReader(qr_path)
                 c.drawImage(qr_img, width - 80, height - 80, width=70, height=70)
@@ -168,7 +212,7 @@ def generate_label_pdf(asset, output_path=None):
             pass
     
     # Code-barres (si disponible)
-    if asset.barcode:
+    if hasattr(asset, 'barcode') and asset.barcode:
         try:
             barcode_path = asset.barcode.path
             if os.path.exists(barcode_path):

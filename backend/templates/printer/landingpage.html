@@ -1,0 +1,213 @@
+<!-- inventory/templates/inventory/landingpage.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMDB Inventory - Gestion des Assets</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Axios (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    
+    <style>
+        .asset-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .asset-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        .printer-status-online { color: #28a745; }
+        .printer-status-offline { color: #dc3545; }
+        .asset-card.selected {
+            border: 2px solid #0d6efd;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-server"></i> CMDB Inventory
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link" id="printerStatus">
+                    <i class="fas fa-print"></i> 
+                    <span class="badge bg-secondary">Vérification...</span>
+                </span>
+                <span class="nav-link" id="userStatus">
+                    <i class="fas fa-user"></i> 
+                    <span id="usernameDisplay">Chargement...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Header avec recherche -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h2><i class="fas fa-list"></i> Liste des Assets</h2>
+                <p class="text-muted">Cliquez sur un asset pour imprimer son étiquette</p>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" 
+                           placeholder="Rechercher un asset..." 
+                           @input="filterAssets">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row mb-4" id="statsRow" style="display:none;">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3 id="totalAssets">0</h3>
+                        <p class="text-muted mb-0">Total Assets</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3 id="printedToday">0</h3>
+                        <p class="text-muted mb-0">Imprimés aujourd'hui</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h3 id="printerUptime">-</h3>
+                        <p class="text-muted mb-0">État imprimante</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets Grid -->
+        <div class="row" id="assetsGrid">
+            <!-- Les assets seront injectés ici par JavaScript -->
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="text-center mt-5" id="loadingSpinner" style="display:none;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="mt-2 text-muted">Chargement des assets...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div class="text-center mt-5" id="emptyState" style="display:none;">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">Aucun asset trouvé</h4>
+            <p class="text-muted">Essayez de modifier votre recherche</p>
+        </div>
+
+        <!-- Error Alert -->
+        <div class="alert alert-danger alert-dismissible fade show" id="errorAlert" style="display:none;" role="alert">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="errorMessage"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+
+    <!-- Modal Confirmation Impression -->
+    <div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="printModalLabel">
+                        <i class="fas fa-print"></i> Confirmer l'impression
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Asset:</strong> <span id="modalAssetId"></span>
+                    </div>
+                    
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <td><strong>Nom:</strong></td>
+                            <td id="modalAssetName"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Localisation:</strong></td>
+                            <td id="modalAssetLocation"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Statut:</strong></td>
+                            <td><span class="badge bg-success" id="modalAssetStatus"></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>QR Code:</strong></td>
+                            <td><small class="text-muted" id="modalQRContent"></small></td>
+                        </tr>
+                    </table>
+
+                    <div class="mb-3">
+                        <label for="copiesInput" class="form-label">
+                            <i class="fas fa-copy"></i> Nombre de copies:
+                        </label>
+                        <input type="number" class="form-control" id="copiesInput" 
+                               min="1" max="5" value="1">
+                        <div class="form-text">Maximum 5 copies par impression</div>
+                    </div>
+
+                    <!-- Progress bar d'impression -->
+                    <div class="progress mt-3" id="printProgress" style="display:none; height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             id="printProgressBar" role="progressbar" style="width: 0%">
+                            <span id="printProgressText">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmPrintBtn">
+                        <i class="fas fa-print"></i> Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header" id="toastHeader">
+                <i class="fas fa-info-circle me-2" id="toastIcon"></i>
+                <strong class="me-auto" id="toastTitle">Notification</strong>
+                <small class="text-muted" id="toastTime"></small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Axios Configuration + Custom JS -->
+    <script src="{% static 'js/axios-config.js' %}"></script>
+    <script src="{% static 'js/printer.js' %}"></script>
+</body>
+</html>
