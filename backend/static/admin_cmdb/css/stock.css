@@ -1,0 +1,387 @@
+/* static/admin_cmdb/css/stock.css */
+
+/* Stock Level Badges */
+.stock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.stock-critical {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.stock-low {
+    background: rgba(249, 115, 22, 0.2);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.stock-ok {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.stock-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.stock-critical .stock-indicator { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.stock-low .stock-indicator { background: #f97316; box-shadow: 0 0 8px #f97316; }
+.stock-ok .stock-indicator { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+/* Alert Banner */
+.stock-alert-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stock-alert-banner.warning {
+    background: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.stock-alert-icon {
+    font-size: 1.5rem;
+}
+
+.stock-alert-content {
+    flex-grow: 1;
+}
+
+.stock-alert-content h5 {
+    margin: 0 0 4px 0;
+    font-size: 0.95rem;
+}
+
+.stock-alert-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* KPI Cards */
+.kpi-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.kpi-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.kpi-icon.blue { background: rgba(37, 99, 235, 0.2); color: #3b82f6; }
+.kpi-icon.green { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.kpi-icon.red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.kpi-icon.amber { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* Stock Table */
+.stock-table {
+    background: var(--bg-card);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.stock-table thead th {
+    background: rgba(37, 99, 235, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 14px 16px;
+    cursor: pointer;
+}
+
+.stock-table tbody td {
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 14px 16px;
+    vertical-align: middle;
+}
+
+.stock-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Item Thumbnail */
+.item-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Movement Timeline */
+.movement-timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.movement-timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.movement-item {
+    position: relative;
+    padding-bottom: 24px;
+}
+
+.movement-item::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--bg-dark);
+}
+
+.movement-item.entry::before {
+    background: #22c55e;
+}
+
+.movement-item.exit::before {
+    background: #ef4444;
+}
+
+.movement-item.adjustment::before {
+    background: #3b82f6;
+}
+
+.movement-item-content {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+.movement-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.movement-type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.movement-type.entry { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.movement-type.exit { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.movement-type.adjustment { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+/* Quick Actions Panel */
+.quick-stock-actions {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.quick-stock-actions h6 {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
+.action-button-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-main);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.action-button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--accent);
+    color: var(--text-main);
+}
+
+.action-button i {
+    font-size: 1.25rem;
+}
+
+/* Stock Value Bar */
+.stock-value-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.stock-value-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #60a5fa);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Modal Stock Entry/Exit */
+.stock-modal-content {
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+}
+
+.stock-modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px 20px;
+}
+
+.stock-modal-body {
+    padding: 20px;
+}
+
+.stock-modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px 20px;
+}
+
+/* Category Filter Chips */
+.category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.category-chip {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.category-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+.category-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stock-alert-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .kpi-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .action-button-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stock-table thead {
+        display: none;
+    }
+    
+    .stock-table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 16px;
+    }
+    
+    .stock-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border: none;
+    }
+    
+    .stock-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+}
+
+/* Low Stock Highlight */
+.row-low-stock {
+    animation: pulseWarning 2s infinite;
+}
+
+@keyframes pulseWarning {
+    0%, 100% { background: transparent; }
+    50% { background: rgba(249, 115, 22, 0.1); }
+}

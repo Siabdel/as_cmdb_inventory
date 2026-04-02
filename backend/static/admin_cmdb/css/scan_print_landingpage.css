@@ -1,0 +1,276 @@
+  /* ==========================================================================
+   SCAN & PRINT HUB — Landing Page Techniciens
+   CMDB Inventory — Société de Reconditionnement IT
+   Version: 1.0 — Mars 2026
+   ========================================================================== */
+ :root {
+        --bg-dark: #0f172a;
+        --bg-card: rgba(15, 23, 42, 0.75);
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+    }
+    
+    body {
+        background: var(--bg-dark);
+        color: var(--text-main);
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .hub-hero {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 40px;
+        text-align: center;
+    }
+    
+    .hub-hero h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .hub-hero p {
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .hub-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+    
+    .hub-card {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 32px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .hub-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+        box-shadow: 0 20px 40px rgba(37, 99, 235, 0.2);
+    }
+    
+    .hub-card-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin-bottom: 24px;
+    }
+    
+    .hub-card-icon.scan { background: rgba(37, 99, 235, 0.2); color: #3b82f6; }
+    .hub-card-icon.print { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .hub-card-icon.audit { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    
+    .hub-card h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    
+    .hub-card p {
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+    
+    .hub-card-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+    }
+    
+    .hub-feature {
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .quick-actions {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 32px;
+        margin-bottom: 40px;
+    }
+    
+    .quick-actions h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .quick-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--text-main);
+        transition: all 0.2s;
+    }
+    
+    .quick-action-btn:hover {
+        background: rgba(37, 99, 235, 0.1);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+    
+    .quick-action-btn i {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+    
+    .quick-action-btn span {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+    
+    .stats-bar {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 40px;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 24px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.2;
+    }
+    
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin-top: 8px;
+    }
+    
+    .recent-activity {
+        background: var(--bg-card);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 32px;
+    }
+    
+    .recent-activity h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+    
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        transition: background 0.2s;
+    }
+    
+    .activity-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    
+    .activity-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .activity-icon.scan { background: rgba(37, 99, 235, 0.2); color: #3b82f6; }
+    .activity-icon.print { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    
+    .activity-content {
+        flex-grow: 1;
+    }
+    
+    .activity-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+    }
+    
+    .activity-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    .activity-time {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    
+    @media (max-width: 768px) {
+        .hub-hero h1 { font-size: 1.8rem; }
+        .hub-cards { grid-template-columns: 1fr; }
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+

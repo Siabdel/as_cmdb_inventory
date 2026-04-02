@@ -237,7 +237,7 @@ dist
 
 # Django specific
 backend/media/
-backend/static/
+##backend/static/
 backend/staticfiles/
 backend/logs/
 
