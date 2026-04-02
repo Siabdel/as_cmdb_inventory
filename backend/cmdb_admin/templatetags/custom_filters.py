@@ -18,9 +18,17 @@ def add(value, arg):
     except (ValueError, TypeError):
         return 0
 
+@register.simple_tag
+def subtract_tag(value, arg):
+    """Soustrait deux nombres (tag syntax)."""
+    try:
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
+        return 0
+
 @register.filter(name='subtract')
-def subtract(value, arg):
-    """Soustrait deux nombres."""
+def subtract_filter(value, arg):
+    """Soustrait deux nombres (filter syntax)."""
     try:
         return float(value) - float(arg)
     except (ValueError, TypeError):

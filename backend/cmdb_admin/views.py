@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.views.generic import TemplateView, ListView, View
 from django.http import JsonResponse
 from django.db.models import Count, Sum, F
 from django.utils import timezone

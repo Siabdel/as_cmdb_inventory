@@ -68,9 +68,8 @@
     {% endif %}
 
     <!-- KPI Cards -->
-    {% with total_items=0 total_value=0 low_stock=0 out_of_stock=0 %}
+    {% with total_items=stock_items|length total_value=0 low_stock=0 out_of_stock=0 %}
     {% for item in stock_items %}
-        {% add total_items 1 as total_items %}
         {% multiply item.quantity item.unit_price as item_value %}
         {% add total_value item_value as total_value %}
         {% if item.quantity == 0 %}{% add out_of_stock 1 as out_of_stock %}{% endif %}
@@ -91,7 +90,7 @@
             <div class="kpi-card">
                 <div class="kpi-icon green">✅</div>
                 <div>
-                    <div class="kpi-value">{{ total_items|subtract:low_stock|subtract:out_of_stock }}</div>
+                    <div class="kpi-value">{{ stock_ok }}</div>
                     <div class="kpi-label">Stock OK</div>
                 </div>
             </div>

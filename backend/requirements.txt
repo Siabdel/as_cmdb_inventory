@@ -24,3 +24,6 @@ factory-boy==3.3.0
 faker==20.1.0
 django-environ==0.10.0
 qrcode[pil]
+reportlab
+pyusb
+python-barcode
