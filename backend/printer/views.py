@@ -11,6 +11,94 @@ from inventory.models import Asset
 from django.shortcuts import render, get_object_or_404
 from printer.models import PrintTemplate, Printer, PrintJob, PrintLog
 
+# backend/printer/views.py
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse
+from django.conf import settings
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.units import inch
+import tempfile
+import os
+
+
+def generate_label_pdf(asset, output_path=None):
+    """
+    Génère un PDF d'étiquette pour un asset — VERSION VALIDÉE ✅.
+    
+    Args:
+        asset (Asset): Instance de l'asset
+        output_path (str, optional): Chemin de sortie du PDF
+    
+    Returns:
+        str: Chemin du fichier PDF généré
+    """
+    if output_path is None:
+        temp_file = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+        output_path = temp_file.name
+        temp_file.close()
+    
+    # Créer le canvas PDF (3×2 pouces = 76×50mm)
+    c = canvas.Canvas(output_path, pagesize=(3 * inch, 2 * inch))
+    width, height = 3 * inch, 2 * inch
+    
+    # Titre
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(10, height - 20, f"ASSET: {asset.name}")
+    
+    # Code
+    c.setFont("Helvetica", 9)
+    c.drawString(10, height - 40, f"Code: {asset.internal_code}")
+    
+    # Localisation
+    if asset.current_location:
+        c.drawString(10, height - 55, f"Localisation: {asset.current_location}")
+    
+    # Date de création
+    created_str = asset.created_at.strftime("%d/%m/%Y")
+    c.drawString(10, height - 70, f"Créé le: {created_str}")
+    
+    # QR Code (IMAGE PNG — C'EST ÇA QUI MARCHE ✅)
+    if hasattr(asset, 'qrcode') and asset.qrcode and asset.qrcode.image:
+        try:
+            qr_path = asset.qrcode.image.path
+            if os.path.exists(qr_path):
+                qr_img = ImageReader(qr_path)
+                c.drawImage(qr_img, width - 80, height - 80, width=70, height=70)
+        except (ValueError, OSError) as e:
+            print(f"⚠️ Erreur QR Code: {e}")
+    
+    # Footer
+    c.setFont("Helvetica-Oblique", 6)
+    c.drawString(10, 5, f"CMDB Inventory - Asset ID: {asset.id}")
+    
+    c.save()
+    
+    return output_path
+
+
+def print_label_pdf_view(request, asset_id):
+    """
+    Génère et retourne PDF pour impression — ENDPOINT VALIDÉ ✅.
+    
+    URL: /django-admin/inventory/asset/<id>/print_label/
+    """
+    from inventory.models import Asset
+    
+    asset = get_object_or_404(Asset, id=asset_id)
+    pdf_path = generate_label_pdf(asset)
+    
+    with open(pdf_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="label_{asset.id}.pdf"'
+        
+        # Nettoyage fichier temporaire
+        try:
+            os.unlink(pdf_path)
+        except:
+            pass
+        
+        return response
 
 
 @decorators.permission_classes([IsAuthenticated])

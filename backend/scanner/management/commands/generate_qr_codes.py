@@ -4,6 +4,13 @@ from scanner.signals import generate_missing_qr_codes, regenerate_all_qr_codes
 
 
 class Command(BaseCommand):
+    """ Commande personnalisée pour générer les QR Codes manquants ou régénérer tous les QR Codes.
+    Usage:
+    - Générer les QR Codes manquants: `python manage.py generate_qr_codes`
+    - Régénérer tous les QR Codes: `python manage.py generate_qr_codes --all`
+    - Mode dry-run (affiche ce qui serait fait sans exécuter): `python manage.py generate_qr_codes --dry-run`
+    """
+    
     help = 'Génère les QR Codes manquants ou régénère tous les QR Codes'
     
     def add_arguments(self, parser):

@@ -1,4 +1,4 @@
-# backend/scanner/views.py
+# backend/scanner/utils.py
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -8,6 +8,7 @@ from rest_framework import status
 from inventory.models import Asset
 from maintenance.models import MaintenanceTicket as Ticket
 from .models import QRCode, ScanLog
+from printer.models import PrintLog
 # backend/scanner/views.py
 from django.http import HttpResponse
 from inventory.serializers import AssetDetailSerializer
@@ -29,6 +30,7 @@ from django.utils import timezone
 from scanner.services.pdf_generator import generate_label_pdf
 from inventory.models import Asset
 import logging
+from printer.models import Printer, PrintJob, PrintLog, PrintTemplate
 
 
 @api_view(['GET'])

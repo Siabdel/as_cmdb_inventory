@@ -11,6 +11,7 @@ from django.views.generic import TemplateView
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from scanner import views as scanner_views
 
 urlpatterns = [
     path('django-admin/', admin.site.urls),
@@ -36,8 +37,11 @@ urlpatterns += [
     ## API endpoints
     path('api/v1/inventory/',  include('inventory.urls')),# URLs de l'app inventory (CRUD assets, catégories, etc.)
     path('api/v1/maintenance/', include('maintenance.urls')),
+     # Scanner API
     path('api/v1/scanner/', include('scanner.urls')), # URLs spécifiques au scanner QR code
-    # config/urls.py
+    # Scan public (sans auth)
+    path('scan/<str:uuid>/', scanner_views.public_scan_result, name='public_scan'),
+    # Stock API
     path('api/v1/stock/', include('stock.urls')),
     path('api/v1/inventory/dashboard/stats/', include('inventory.urls')),
     # Authentification par token (pour le frontend)
