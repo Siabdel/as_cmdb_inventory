@@ -20,8 +20,6 @@ urlpatterns = [
 
     # Landing Page Scan & Print
     path('scan-print/', utils.scan_print_landing, name='scan-print-landing'),
-
-
     # API Endpoints for scanner
     path('print-logs/', viewsets.PrintLogViewSet.as_view({'get': 'list'}), name='print-logs'),
     path('logs/', viewsets.PrintLogViewSet.as_view({'get': 'list'}), name='print-logs'),

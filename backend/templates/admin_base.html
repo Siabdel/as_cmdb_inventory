@@ -115,16 +115,11 @@
     <!-- <script src="{% static 'admin_cmdb/js/main.js' %}"></script> -- PLACÉ AVANT api.js POUR ASSURER QUE Vue EST DÉJÀ CHARGÉ AVANT LES MODULES QUI EN DÉPENDENT -->
     
     <!-- 4. api.js -- DÉCLARE window.VueCreateApp -->
-    <script src="{% static 'admin_cmdb/js/api.js' %}"></script> <!-- PLACÉ APRÈS main.js POUR ASSURER QUE Vue EST CHARGÉ AVANT -->
-    
-    <!-- 6. Vue.js Messages Component -->
-    <script>
-        // Initialisation du système de messages Vue.js
-        document.addEventListener('DOMContentLoaded', function() {
-            // Pour l'instant, on ne fait rien ici pour éviter les erreurs
-            // Les messages sont gérés directement dans les composants Vue
-        });
-    </script>
+    <!-- 1. Vue.js -- PREMIER -->
+
+    <!-- 3. api.js -- DÉCLARE window.VueCreateApp -->
+    <script src="{% static 'admin_cmdb/js/api.js' %}"></script>
+
     
     <!-- 6. Modules spécifiques -->
     {% block extra_js %}{% endblock %}

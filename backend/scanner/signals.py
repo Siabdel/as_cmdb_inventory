@@ -46,9 +46,6 @@ def _generate_qr_image(qr_obj):
         '/media/qr_codes/2026/03/qr_asset_152_abc123.png'
     """
     try:
-        # ====================================================================
-        # 1. VALIDATION PRÉALABLE
-        # ====================================================================
         if not qr_obj or not qr_obj.asset:
             logger.error(f'[QR] QRCode ou Asset invalide: {qr_obj}')
             return None
@@ -58,75 +55,67 @@ def _generate_qr_image(qr_obj):
             return None
         
         # ====================================================================
-        # 2. PRÉPARER DONNÉES QR CODE
+        # CORRECTION CRITIQUE: S'assurer que uuid_token est un string valide
         # ====================================================================
-        # Format: qr_asset_<asset_id>_<uuid_token>
-        qr_data = f"qr_asset_{qr_obj.asset.id}_{qr_obj.uuid_token}"
+        import uuid as uuid_lib
+        
+        # Si uuid_token est un objet UUID, le convertir en string AVEC tirets
+        if isinstance(qr_obj.uuid_token, uuid_lib.UUID):
+            uuid_str = str(qr_obj.uuid_token)  # 'abc123-def456-789g-hijk-lmnopqrstuvw'
+        else:
+            # Si c'est déjà un string, s'assurer qu'il a le bon format
+            uuid_str = str(qr_obj.uuid_token)
+            # Validation: doit avoir 5 segments avec tirets (format standard UUID)
+            if uuid_str.count('-') != 4:
+                logger.warning(f'[QR] UUID suspect: {uuid_str}')
+        
+        # Format QR Code: qr_asset_<asset_id>_<uuid_complet>
+        qr_data = f"qr_asset_{qr_obj.asset.id}_{uuid_str}"
+        
+        logger.info(f'[QR] Données QR générées: {qr_data}')
         
         # Mettre à jour le champ code si vide
         if not qr_obj.code:
             qr_obj.code = qr_data
             qr_obj.save(update_fields=['code'])
         
-        logger.info(f'[QR] Génération pour Asset {qr_obj.asset.id} | Data: {qr_data}')
+        # ====================================================================
+        # Génération image QR (inchangé)
+        # ====================================================================
+        import io
+        import qrcode
+        from django.core.files.base import ContentFile
+        from datetime import datetime
         
-        # ====================================================================
-        # 3. CRÉER QR CODE AVEC LIBRAIRIE QRCode
-        # ====================================================================
         qr = qrcode.QRCode(
-            version=1,  # Auto-adjust si nécessaire
-            error_correction=qrcode.constants.ERROR_CORRECT_M,  # 15% recovery
-            box_size=10,  # Taille des pixels
-            border=4,  # Marge standard
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=4,
         )
-        
         qr.add_data(qr_data)
         qr.make(fit=True)
         
-        # ====================================================================
-        # 4. GÉNÉRER IMAGE PNG
-        # ====================================================================
-        img = qr.make_image(
-            fill_color="black",
-            back_color="white"
-        )
+        img = qr.make_image(fill_color="black", back_color="white")
         
-        # ====================================================================
-        # 5. SAUVEGARDER DANS BUFFER MÉMOIRE
-        # ====================================================================
         buffer = io.BytesIO()
         img.save(buffer, format='PNG', quality=95, optimize=True)
         buffer.seek(0)
         
-        # ====================================================================
-        # 6. CRÉER CHEMIN DE STOCKAGE
-        # ====================================================================
-        # Organisation: media/qr_codes/YYYY/MM/qr_asset_<id>_<uuid>.png
         now = datetime.now()
         year_month = now.strftime('%Y/%m')
-        
-        filename = f"qr_asset_{qr_obj.asset.id}_{qr_obj.uuid_token}.png"
+        filename = f"qr_asset_{qr_obj.asset.id}_{uuid_str}.png"
         filepath = f"qr_codes/{year_month}/{filename}"
         
-        # ====================================================================
-        # 7. CRÉER RÉPERTOIRES SI NÉCESSAIRE
-        # ====================================================================
+        from django.conf import settings
+        import os
         media_root = settings.MEDIA_ROOT
         full_path = os.path.join(media_root, filepath)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         
-        # ====================================================================
-        # 8. SAUVEGARDER FICHIER
-        # ====================================================================
-        # Utiliser Django FileField save() pour gestion propre
-        qr_obj.image.save(
-            filename,
-            ContentFile(buffer.getvalue()),
-            save=True
-        )
+        qr_obj.image.save(filename, ContentFile(buffer.getvalue()), save=True)
         
-        logger.info(f'[QR] Image générée avec succès: {qr_obj.image.url}')
-        
+        logger.info(f'[QR] Image générée: {qr_obj.image.url}')
         return qr_obj.image.url
         
     except Exception as e:

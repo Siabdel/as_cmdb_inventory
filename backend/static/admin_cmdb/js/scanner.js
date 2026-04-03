@@ -1,25 +1,34 @@
-// backend/static/admin_cmdb/js/scanner.js
 // ============================================================================
-// SCANNER QR/Code-Barres — Webcam + USB (HoneyWell)
-// CORRECTION: Buffer USB correctement géré
-// Version: 3.0 — Correction createApp + USB Buffer
+// static/admin_cmdb/js/scanner.js
 // ============================================================================
-
-// ✅ CORRECTION LIGNE 1 — Utiliser window.VueCreateApp (défini dans api.js)
-const createApp = window.VueCreateApp || Vue.createApp;
-
-// Vérification que createApp est disponible
-if (typeof createApp !== 'function') {
-    console.error('❌ createApp n\'est pas une fonction !');
-    console.error('Vérifiez que Vue.js et api.js sont chargés avant scanner.js');
+// SCANNER QR/Code-Barres — Correction Finale (this Context + Buffer)
+// ============================================================================// static/admin_cmdb/js/scanner.js
+// ============================================================================
+// SCANNER QR/Code-Barres — Version Quagga.js (Webcam)
+// Remplace l'approche USB HID par détection visuelle
+// ============================================================================
+if (typeof window.VueCreateApp === 'undefined') {
+    console.error('❌ window.VueCreateApp non défini !');
+    if (typeof Vue !== 'undefined') {
+        window.VueCreateApp = Vue.createApp;
+    }
 }
+
+// static/admin_cmdb/js/scanner.js
+// ============================================================================
+// SCANNER QR/Code-Barres — Version Input Formulaire (RECOMMANDÉ)
+// Capture le scanner USB via un input caché au lieu de document keydown
+// ============================================================================
+
+const createApp = window.VueCreateApp || Vue.createApp;
 
 createApp({
     delimiters: ['[[', ']]'],
     data() {
         return {
+            // UI State
+            scannerActive: true,
             cameraActive: false,
-            continuousScan: false,
             scannerType: 'usb', // 'webcam' ou 'usb'
             scanResult: null,
             scanHistory: [],
@@ -31,50 +40,105 @@ createApp({
             moveLocation: '',
             codeReader: null,
             searchTimeout: null,
+            msg: 'Scanner prêt - Mode USB actif',
             
-            // USB Scanner Configuration
+            // ✅ USB Scanner — Input Buffer (PLUS DE GESTION MANUELLE)
             usbBuffer: '',
-            usbScanTimeout: null,
-            USB_SCAN_DELAY: 100,
-            lastKeyTime: 0,
-            keyCount: 0,
-            isListening: false,
-            msg: 'Scanner prêt - Mode USB actif'
+            lastScanTime: 0,
+            SCAN_DEBOUNCE: 1000, // 1 seconde entre scans
         }
     },
+    
     mounted() {
         console.log('🔧 [SCANNER] mounted()');
-        this.lastKeyTime = Date.now();
-        this.initZXing();
         this.loadScanHistory();
         this.fetchLocations();
-        this.setupKeyboardListener();
-        console.log('✅ [SCANNER] Initialisation terminée');
+        
+        // ✅ Focus automatique sur l'input USB au chargement
+        if (this.scannerType === 'usb') {
+            this.focusInput();
+        }
     },
-    // ❌ SUPPRIMER updated() — Crée des écouteurs multiples
-    // updated() {
-    //     this.setupKeyboardListener();  // ❌ À SUPPRIMER
-    // },
+    
     beforeUnmount() {
         console.log('🔧 [SCANNER] beforeUnmount()');
         this.stopCamera();
-        this.removeKeyboardListener();
     },
+    
     methods: {
         // ====================================================================
-        // ZXing - Webcam
+        // USB SCANNER — Gestion via Input (SIMPLIFIÉ)
+        // ====================================================================
+        focusInput() {
+            // ✅ Focus sur l'input caché pour capturer le scanner USB
+            const input = document.getElementById('usb-scanner-input');
+            if (input) {
+                input.focus();
+                console.log('✅ [SCANNER] Input focusé');
+            }
+        },
+        
+        onInputFocus() {
+            console.log('📝 [SCANNER] Input focusé');
+        },
+        
+        onInputBlur() {
+            console.log('⚠️ [SCANNER] Input perdu le focus');
+            // ✅ Re-focus automatique après 100ms
+            setTimeout(() => {
+                if (this.scannerType === 'usb' && this.scannerActive) {
+                    this.focusInput();
+                }
+            }, 100);
+        },
+        
+        onEnterPressed() {
+            // ✅ Entrée pressée = fin du scan
+            console.log('⏎ [SCANNER] Enter détecté');
+            
+            const code = this.usbBuffer.trim();
+            
+            if (code.length >= 3) {
+                console.log('✅ [SCANNER] Code valide:', code);
+                this.handleScanResult(code);
+            } else {
+                console.log('⚠️ [SCANNER] Code trop court:', code);
+            }
+            
+            // ✅ Reset buffer
+            this.usbBuffer = '';
+            
+            // ✅ Garder le focus
+            this.focusInput();
+        },
+        
+        resetScanner() {
+            this.usbBuffer = '';
+            this.focusInput();
+        },
+        
+        switchScannerType(type) {
+            console.log('🔄 [SCANNER] switchScannerType()', type);
+            this.scannerType = type;
+            this.msg = `Mode: ${type === 'usb' ? 'Scanner USB' : 'Caméra Web'}`;
+            
+            if (type === 'usb') {
+                this.stopCamera();
+                this.focusInput();
+            } else if (type === 'webcam') {
+                this.startCamera();
+            }
+        },
+        
+        // ====================================================================
+        // WEBCAM — ZXing (Inchangé)
         // ====================================================================
         initZXing() {
-            console.log('📷 [SCANNER] initZXing()');
             this.codeReader = new ZXing.BrowserMultiFormatReader();
         },
+        
         async startCamera() {
-            console.log('📷 [SCANNER] startCamera()');
-            
-            if (this.scannerType === 'usb') {
-                console.log('⚠️ [SCANNER] Mode USB - caméra non démarrée');
-                return;
-            }
+            if (this.scannerType === 'usb') return;
             
             try {
                 const videoInputDevices = await ZXing.BrowserMultiFormatReader.listVideoInputDevices();
@@ -88,151 +152,52 @@ createApp({
                     '#camera-preview',
                     (result, err) => {
                         if (result) {
-                            console.log('✅ [SCANNER] QR détecté:', result.getText());
                             this.handleScanResult(result.getText());
-                            if (!this.continuousScan) {
-                                this.stopCamera();
-                            }
+                            if (!this.continuousScan) this.stopCamera();
                         }
                     }
                 );
                 this.cameraActive = true;
-                console.log('✅ [SCANNER] Caméra démarrée');
             } catch (error) {
-                console.error('❌ [SCANNER] Erreur caméra:', error);
+                console.error('❌ Erreur caméra:', error);
                 alert('Impossible d\'accéder à la caméra');
             }
         },
+        
         stopCamera() {
-            console.log('📷 [SCANNER] stopCamera()');
-            if (this.codeReader) {
-                this.codeReader.reset();
-            }
+            if (this.codeReader) this.codeReader.reset();
             this.cameraActive = false;
         },
+        
         toggleCamera() {
-            console.log('🔄 [SCANNER] toggleCamera()');
-            if (this.cameraActive) {
-                this.stopCamera();
-            } else {
-                this.startCamera();
-            }
+            if (this.cameraActive) this.stopCamera();
+            else this.startCamera();
         },
         
         // ====================================================================
-        // USB SCANNER — Gestion Buffer
+        // TRAITEMENT SCAN — Commun USB/Webcam
         // ====================================================================
-        setupKeyboardListener() {
-            console.log('🔌 [SCANNER] setupKeyboardListener()');
-            this.removeKeyboardListener();
+        async handleScanResult(code) {
+            console.log('📡 [SCANNER] handleScanResult()', code);
+            this.msg = `Scan: ${code}`;
             
-            if (this.scannerType !== 'usb') {
-                console.log('⚠️ [SCANNER] Pas en mode USB');
-                return;
-            }
-            
-            document.addEventListener('keydown', this.handleKeyboardInput);
-            this.isListening = true;
-            console.log('✅ [SCANNER] Écouteur USB ACTIVÉ');
-        },
-        
-        removeKeyboardListener() {
-            console.log('🔌 [SCANNER] removeKeyboardListener()');
-            if (this.isListening) {
-                document.removeEventListener('keydown', this.handleKeyboardInput);
-                this.isListening = false;
-                console.log('✅ [SCANNER] Écouteur USB DÉSACTIVÉ');
-            }
-        },
-        
-        // ✅ MÉTHODE UNIQUE — Pas de double déclaration
-        handleKeyboardInput(event) {
-            console.log('⌨️ [SCANNER] Touche:', event.key);
-            
-            if (this.scannerType !== 'usb') return;
-            
-            // Ignorer touches de modification
-            if (event.ctrlKey || event.altKey || event.shiftKey || event.metaKey) {
-                return;
-            }
-            
+            // Anti-doublon
             const now = Date.now();
-            const timeSinceLastKey = now - this.lastKeyTime;
-            this.lastKeyTime = now;
-            
-            console.log('⏱️ [SCANNER] Délai:', timeSinceLastKey, 'ms | Buffer:', this.usbBuffer);
-            
-            // Entrée = fin de scan
-            if (event.key === 'Enter') {
-                console.log('⏎ [SCANNER] Enter détecté');
-                this.processUSBBuffer();
-                event.preventDefault();
+            if (now - this.lastScanTime < this.SCAN_DEBOUNCE) {
+                console.log('⏱️ [SCANNER] Scan trop rapide - ignoré');
                 return;
             }
+            this.lastScanTime = now;
             
-            // Délai trop long = saisie humaine
-            if (timeSinceLastKey > 150 && this.usbBuffer.length > 0) {
-                console.log('⏱️ [SCANNER] Délai trop long - Buffer clear');
-                this.usbBuffer = '';
-                this.keyCount = 0;
-                return;
-            }
-            
-            // Accumuler caractères
-            if (event.key.length === 1) {
-                this.usbBuffer += event.key;
-                this.keyCount++;
-                console.log('📝 [SCANNER] Buffer:', this.usbBuffer, '(', this.keyCount, ')');
-                
-                clearTimeout(this.usbScanTimeout);
-                this.usbScanTimeout = setTimeout(() => {
-                    console.log('⏰ [SCANNER] Timeout');
-                    this.processUSBBuffer();
-                }, this.USB_SCAN_DELAY);
-            }
-        },
-        
-        processUSBBuffer() {
-            console.log('🔄 [SCANNER] processUSBBuffer()');
-            const code = this.usbBuffer.trim();
-            
-            console.log('📝 [SCANNER] Code:', code, '| Length:', code.length);
-            
-            if (code.length < 3) {
-                console.log('❌ [SCANNER] Code trop court');
-                this.usbBuffer = '';
-                this.keyCount = 0;
-                return;
-            }
-            
-            console.log('✅ [SCANNER] Code valide - Appel API');
-            this.handleScanResult(code);
-            
-            this.usbBuffer = '';
-            this.keyCount = 0;
-            clearTimeout(this.usbScanTimeout);
-        },
-        
-        // ====================================================================
-        // TRAITEMENT SCAN
-        // ====================================================================
-        async handleScanResult(scanCode) {
-            console.log('📡 [SCANNER] handleScanResult()', scanCode);
-            this.msg = `Scan: ${scanCode}`;
-            
-            const extractedUuid = this.extractUuidFromQR(scanCode);
-            console.log('🔑 [SCANNER] UUID:', extractedUuid);
+            const extractedUuid = this.extractUuidFromQR(code);
+            console.log('🔑 [SCANNER] UUID extrait:', extractedUuid);
             
             try {
                 console.log('🌐 [SCANNER] Appel API:', `/scanner/scan/${extractedUuid}/`);
                 
                 const response = await window.apiClient.get(`/scanner/scan/${extractedUuid}/`);
                 
-                console.log('✅ [SCANNER] Réponse:', response.status);
-                
-                if (!response.data) {
-                    throw new Error('Données vides');
-                }
+                if (!response.data) throw new Error('Données vides');
                 
                 this.scanResult = response.data;
                 console.log('✅ [SCANNER] Asset:', response.data.name);
@@ -249,9 +214,18 @@ createApp({
             } catch (error) {
                 console.error('❌ [SCANNER] Erreur:', error);
                 
-                if (error.response && error.response.status === 404) {
-                    alert(`❌ Code non reconnu: ${extractedUuid}`);
-                } else if (error.response && error.response.status === 401) {
+                if (error.response?.status === 404) {
+                    // Fallback avec code brut
+                    try {
+                        const fallbackResp = await window.apiClient.get(`/scanner/scan/${encodeURIComponent(code)}/`);
+                        if (fallbackResp.data) {
+                            this.scanResult = fallbackResp.data;
+                            this.msg = `✅ ${fallbackResp.data.name} (fallback)`;
+                            return;
+                        }
+                    } catch (fbErr) {}
+                    alert(`❌ Code non reconnu: ${code}`);
+                } else if (error.response?.status === 401) {
                     alert('⚠️ Session expirée');
                     window.location.href = '/admin/login/';
                 } else {
@@ -261,95 +235,58 @@ createApp({
         },
         
         extractUuidFromQR(qrText) {
-            console.log('🔑 [SCANNER] extractUuidFromQR()', qrText);
+            if (!qrText || typeof qrText !== 'string') return qrText;
             
             // Format: qr_asset_<id>_<uuid>
-            const parts = qrText.split('_');
-            if (parts.length >= 3) {
-                return parts[parts.length - 1];
+            if (qrText.startsWith('qr_asset_')) {
+                const parts = qrText.split('_');
+                if (parts.length >= 4) {
+                    return parts.slice(3).join('_');
+                }
             }
             
-            // Format: UUID direct ou Serial/Code
+            // Regex UUID
+            const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+            const match = qrText.match(uuidPattern);
+            if (match) return match[0];
+            
             return qrText;
         },
         
         // ====================================================================
-        // HISTORIQUE
+        // UTILITAIRES
         // ====================================================================
         addToHistory(scan) {
             if (!scan) return;
             this.scanHistory.unshift(scan);
-            if (this.scanHistory.length > 10) {
-                this.scanHistory.pop();
-            }
+            if (this.scanHistory.length > 10) this.scanHistory.pop();
             localStorage.setItem('cmdb_scan_history', JSON.stringify(this.scanHistory));
         },
+        
         loadScanHistory() {
             const saved = localStorage.getItem('cmdb_scan_history');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    this.scanHistory = parsed.filter(scan => scan && scan.uuid && scan.asset_name);
-                } catch (e) {
-                    this.scanHistory = [];
-                }
-            }
-        },
-        async loadScanResult(uuid) {
-            try {
-                const response = await window.apiClient.get(`/scanner/scan/${uuid}/`);
-                this.scanResult = response.data;
-                this.showManualSearch = false;
-            } catch (error) {
-                alert('Asset non trouvé');
+                    this.scanHistory = parsed.filter(s => s && s.uuid && s.asset_name);
+                } catch (e) { this.scanHistory = []; }
             }
         },
         
-        // ====================================================================
-        // RECHERCHE & LOCATIONS
-        // ====================================================================
         async fetchLocations() {
             try {
                 const response = await window.apiClient.get('/inventory/location/');
                 this.locations = response.data || [];
-                console.log('📍 [SCANNER] Locations:', this.locations.length);
             } catch (error) {
-                console.error('❌ [SCANNER] Erreur locations:', error);
                 this.locations = [];
             }
         },
-        async manualSearch() {
-            if (!this.manualSearchQuery.trim()) return;
-            
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(async () => {
-                try {
-                    const response = await window.apiClient.get('/inventory/assets/', {
-                        params: { search: this.manualSearchQuery, page_size: 5 }
-                    });
-                    this.manualSearchResults = response.data.results || response.data;
-                } catch (error) {
-                    console.error('❌ [SCANNER] Erreur recherche:', error);
-                }
-            }, 300);
-        },
-        selectManualResult(asset) {
-            console.log('✅ [SCANNER] selectManualResult()', asset);
-            this.scanResult = asset;
-            this.showManualSearch = false;
-            this.manualSearchQuery = '';
-            this.manualSearchResults = [];
-        },
         
-        // ====================================================================
-        // ACTIONS
-        // ====================================================================
         async moveAsset() {
-            if (!this.moveLocation || !this.scanResult || !this.scanResult.id) {
+            if (!this.moveLocation || !this.scanResult?.id) {
                 alert('Aucun asset sélectionné');
                 return;
             }
-            
             try {
                 await window.apiClient.post(`/inventory/assets/${this.scanResult.id}/move/`, {
                     location_id: this.moveLocation
@@ -361,16 +298,15 @@ createApp({
                 alert('❌ Erreur déplacement');
             }
         },
+        
         getStatusClass(status) {
             const map = {
-                'active': 'status-active',
-                'maintenance': 'status-maintenance',
-                'retired': 'status-retired',
-                'stock': 'status-stock',
-                'repair': 'status-repair'
+                'active': 'status-active', 'maintenance': 'status-maintenance',
+                'retired': 'status-retired', 'stock': 'status-stock', 'repair': 'status-repair'
             };
             return map[status] || 'status-stock';
         },
+        
         formatDate(dateStr) {
             if (!dateStr) return '-';
             return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -378,35 +314,16 @@ createApp({
                 hour: '2-digit', minute: '2-digit'
             });
         },
+        
         playBeep() {
             try {
                 const audio = new AudioContext();
-                const oscillator = audio.createOscillator();
+                const osc = audio.createOscillator();
                 const gain = audio.createGain();
-                oscillator.connect(gain);
-                gain.connect(audio.destination);
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
-                gain.gain.value = 0.1;
-                oscillator.start();
-                setTimeout(() => oscillator.stop(), 150);
-            } catch (e) {
-                console.warn('⚠️ AudioContext non supporté');
-            }
-        },
-        switchScannerType(type) {
-            console.log('🔄 [SCANNER] switchScannerType()', type);
-            this.scannerType = type;
-            this.lastKeyTime = Date.now();
-            this.msg = `Mode: ${type === 'usb' ? 'Scanner USB' : 'Caméra Web'}`;
-            
-            if (type === 'webcam') {
-                this.removeKeyboardListener();
-                this.startCamera();
-            } else if (type === 'usb') {
-                this.stopCamera();
-                this.setupKeyboardListener();
-            }
+                osc.connect(gain); gain.connect(audio.destination);
+                osc.frequency.value = 800; osc.type = 'sine'; gain.gain.value = 0.1;
+                osc.start(); setTimeout(() => osc.stop(), 150);
+            } catch (e) {}
         }
     }
 }).mount('#scanner-app');

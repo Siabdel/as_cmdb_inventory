@@ -26,13 +26,14 @@ class QRCode(models.Model):
         default=uuid.uuid4,
         unique=True,
         db_index=True,
-        editable=False
+        editable=False,
+        help_text="Token unique pour l'URL de scan (ex: qr_asset_<id>_<uuid>)"
     )
     code = models.CharField(
         max_length=255,
         unique=True,
         help_text="Format: qr_asset_<id>_<uuid>",
-        default="default_qr_code"
+        default="default_qr_code",
     )
     
     # Image stockée en filesystem, URL en base

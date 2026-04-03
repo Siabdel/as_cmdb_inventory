@@ -1,6 +1,6 @@
 // static/admin_cmdb/js/main.js
 
-const { createApp } = Vue;
+const createApp = window.VueCreateApp || Vue.createApp;
 
 createApp({
     delimiters: ['[[', ']]'], // Délimiteurs Vue pour éviter conflit Django
@@ -38,7 +38,7 @@ createApp({
             // Fallback sur localStorage si besoin pour éviter une requête supplémentaire
             try {
                 const res = await window.apiClient.get('/auth/user/'); // Endpoint supposé standard
-                this.user = res.data;
+                this.user = res.data || res.data.user || [];
             } catch (e) {
                 // Si échec, on garde les données en session ou default
                 this.user.username = "Utilisateur";
