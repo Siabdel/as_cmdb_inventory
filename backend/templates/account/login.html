@@ -1,0 +1,142 @@
+<!-- templates/account/login.html -->
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load account socialaccount %}
+
+{% block title %}Connexion — CMDB Inventory{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 100px auto;
+        padding: 32px;
+        background: var(--bg-card);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    
+    .login-header h2 {
+        color: var(--text-main);
+        margin-bottom: 8px;
+    }
+    
+    .login-header p {
+        color: var(--text-muted);
+    }
+    
+    .form-control {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-main);
+    }
+    
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent);
+        color: var(--text-main);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .btn-login:hover {
+        background: var(--accent-hover);
+    }
+    
+    .login-links {
+        text-align: center;
+        margin-top: 24px;
+        color: var(--text-muted);
+    }
+    
+    .login-links a {
+        color: var(--accent);
+        text-decoration: none;
+    }
+    
+    .login-links a:hover {
+        text-decoration: underline;
+    }
+    
+    .alert-error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-header">
+        <h2>🔐 Connexion</h2>
+        <p>CMDB Inventory — Société de Reconditionnement IT</p>
+    </div>
+    
+    {% if form.errors %}
+    <div class="alert-error">
+        {% for field in form %}
+            {% for error in field.errors %}
+                <div>{{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'account_login' %}">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="id_login" class="form-label">Nom d'utilisateur</label>
+            <input type="text" name="login" id="id_login" class="form-control" 
+                   value="{{ form.login.value|default:'' }}" required autofocus>
+        </div>
+        
+        <div class="mb-4">
+            <label for="id_password" class="form-label">Mot de passe</label>
+            <input type="password" name="password" id="id_password" 
+                   class="form-control" required>
+        </div>
+        
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+        
+        <button type="submit" class="btn-login">Se connecter</button>
+    </form>
+    
+    <div class="login-links">
+        {% if ACCOUNT_EMAIL_VERIFICATION != 'mandatory' %}
+        <p>
+            Pas encore de compte ? 
+            <a href="{% url 'account_signup' %}">S'inscrire</a>
+        </p>
+        {% endif %}
+        <p>
+            <a href="{% url 'account_reset_password' %}">Mot de passe oublié ?</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

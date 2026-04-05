@@ -1,6 +1,8 @@
 """
 Configuration des URLs pour le projet CMDB Inventory
 """
+from json import scanner
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -12,9 +14,12 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from scanner import views as scanner_views
+from scanner.utils import scan_print_landing
+
 
 urlpatterns = [
     path('django-admin/', admin.site.urls),
+    path('accounts/', include('allauth.urls')),
     # Authentification DRF
     path('api-auth/', include('rest_framework.urls')),
     # Administration CMDB (interface custom)
@@ -27,7 +32,8 @@ urlpatterns = [
 
 urlpatterns += [
     # Accueil - Dashboard public
-    path('', inventory_views.DashboardView.as_view(), name='dashboard'),  # ← accueil
+    path('dashboard/', inventory_views.DashboardView.as_view(), name='dashboard'),  # ← accueil
+    path('', scan_print_landing, name='admin_scan_print_landing'),
     # API REST
     path('api/v1/staff/', include('staff.urls')),
     path('api/stats/', include('cmdb_admin.urls')),

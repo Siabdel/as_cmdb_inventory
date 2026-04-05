@@ -42,13 +42,13 @@
 {% endblock %}
 
 {% block content %}
-<div id="scanner-app">
+<div  id="scanner-app">
     <h2 class="mb-4">📷 Scanner QR / Code-Barres</h2>
     
     <!-- Status -->
     <div class="scanner-status" :class="{ active: scannerActive }">
         <strong>[[ scannerActive ? '🟢 Scanner Actif' : '⚪ Scanner Inactif' ]]</strong>
-        <div class="text-muted">[[ msg ]]</div>
+        <div class="text-white">[[ msg ]]</div>
     </div>
     
     <!-- Mode Selection -->
@@ -67,7 +67,7 @@
     
     <!-- USB Scanner Input (CACHÉ mais fonctionnel) -->
     <div v-if="scannerType === 'usb'" class="mb-4">
-        <label class="form-label text-muted">Scanner USB (HoneyWell)</label>
+        <label class="form-label text-white">Scanner USB (HoneyWell)</label>
         <div class="scanner-display">
             <span v-if="usbBuffer">[[ usbBuffer ]]</span>
             <span v-else class="text-muted">Prêt à scanner...</span>
@@ -85,9 +85,110 @@
                autocapitalize="off"
                spellcheck="false">
         
-        <small class="text-muted">
+        <small class="text-info">
             ℹ️ Le scanner USB émule un clavier. Gardez cette page active.
         </small>
+    </div>
+
+    <!-- ✅ Idem pour manualSearch modal -->
+    <div class="modal fade" id="manualSearchModal" tabindex="-1" v-show="showManualSearch">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">🔍 Recherche manuelle</h5>
+                    <button type="button" class="btn-close btn-close-white" 
+                            @click="closeModal('showManualSearch')"></button>
+                </div>
+                <!-- ... -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Boutons avec gestion focus -->
+    <button class="quick-action-btn" @click="scanResult = null; resetScanner()">
+        <i>🔄</i><span>Nouveau Scan</span>
+    </button>
+
+    <button class="quick-action-btn" @click="openModal('showMoveModal')">
+        <i>📍</i><span>Déplacer</span>
+    </button>
+    <!-- templates/admin/scanner/index.html — CORRECTIONS -->
+
+    <!-- ✅ NOUVEAU: Selecteur de contexte de scan -->
+    <div class="mb-3" v-if="scannerType === 'usb'">
+        <label class="form-label text-white">Contexte du scan</label>
+        <select @click.stop.prevent class="form-select bg-dark border-secondary text-white" v-model="scanContext">
+            <option value="inventory">📦 Inventaire</option>
+            <option value="maintenance">🔧 Maintenance</option>
+            <option value="movement">📍 Mouvement</option>
+            <option value="audit">🔍 Audit</option>
+            <option value="reception">📥 Réception</option>
+        </select>
+    </div>
+
+    <!-- ✅ NOUVEAU: Selecteur de location -->
+    <!-- ✅ Utiliser closeModal() au lieu de @click direct -->
+    <div class="modal fade" id="moveModal" tabindex="-1" v-show="showMoveModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title">📍 Déplacer l'asset</h5>
+                    <!-- ✅ Utiliser closeModal() -->
+                    <button type="button" class="btn-close btn-close-white" 
+                            @click="closeModal('showMoveModal')"></button>
+                </div>
+                <div class="modal-body">
+                    <select v-if="locations.length > 0" class="form-select bg-dark border-secondary text-white" v-model="moveLocation">
+                        <option value="">Sélectionner une localisation</option>
+                        <option v-for="loc in locations" :key="loc.id" :value="loc.id">
+                            [[ loc.name ]]
+                        </option>
+                    </select>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" @click="closeModal('showMoveModal')">Annuler</button>
+                    <button type="button" class="btn btn-primary" @click="moveAsset">Confirmer</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+
+
+    <!-- ✅ NOUVEAU: Afficher code_type dans le résultat -->
+    <div v-if="scanResult" class="scan-result-card">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h3>[[ scanResult.name ]]</h3>
+                <p>S/N: [[ scanResult.serial_number ]]</p>
+            </div>
+            <!-- ✅ BADGE CODE TYPE -->
+            <div>
+                <span class="badge" :class="{
+                    'bg-primary': scanResult.code_type === 'qr_code',
+                    'bg-success': scanResult.code_type === 'barcode_serial',
+                    'bg-info': scanResult.code_type === 'barcode_internal'
+                }">
+                    [[ scanResult.code_type ]]
+                </span>
+            </div>
+        </div>
+        
+        <!-- ✅ SCAN LOG REFERENCE -->
+        <div v-if="scanResult.scan_log_id" class="alert alert-info bg-dark border-secondary text-white">
+            <small>📝 Scan Log ID: [[ scanResult.scan_log_id ]]</small>
+        </div>
+    </div>
+
+    <!-- ✅ NOUVEAU: Lien vers historique complet -->
+    <div v-if="scanHistory.length > 0" class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>📜 Historique des scans</h5>
+            <a href="/admin/scanner/logs/" class="btn btn-sm btn-outline-light">
+                Voir tout l'historique →
+            </a>
+        </div>
+        <!-- ... existing history items ... -->
     </div>
     
     <!-- Webcam Container -->
@@ -132,10 +233,10 @@
     <!-- History -->
     <div v-if="scanHistory.length > 0" class="mt-4">
         <h5>📜 Historique des scans</h5>
-        <div class="scan-history-item" v-for="(scan, index) in scanHistory" :key="index">
+        <div v-if="scanHistory.length > 0" class="scan-history-item" v-for="(scan, index) in scanHistory" :key="index">
             <div>
                 <div class="text-white">[[ scan.asset_name ]]</div>
-                <small class="text-muted">[[ formatDate(scan.scanned_at) ]]</small>
+                <small class="text-white">[[ formatDate(scan.scanned_at) ]]</small>
             </div>
         </div>
     </div>
@@ -165,6 +266,12 @@
     </div>
 </div>
 {% endblock %}
+
+<script>
+    event.preventDefault();
+    event.stopPropagation();
+</script>
+   
 
 {% block extra_js %}
 <!-- ZXing pour webcam -->

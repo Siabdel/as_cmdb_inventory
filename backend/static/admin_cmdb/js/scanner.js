@@ -46,6 +46,12 @@ createApp({
             usbBuffer: '',
             lastScanTime: 0,
             SCAN_DEBOUNCE: 1000, // 1 seconde entre scans
+             // ✅ NOUVEAU: Contexte et location pour traçabilité
+            scanContext: 'inventory', // inventory, maintenance, movement, audit
+            currentLocationId: null,
+             // ✅ NOUVEAU: Contrôle du focus
+            shouldRefocus: true,  // Flag pour contrôler le re-focus
+            focusTimeout: null,   // Timeout pour re-focus
         }
     },
     
@@ -58,17 +64,55 @@ createApp({
         if (this.scannerType === 'usb') {
             this.focusInput();
         }
+          // ✅ NOUVEAU: Empêcher la perte de focus sur click document
+        document.addEventListener('click', this.handleDocumentClick);
+        document.addEventListener('mousedown', this.handleDocumentClick);
     },
     
     beforeUnmount() {
         console.log('🔧 [SCANNER] beforeUnmount()');
         this.stopCamera();
+        
+        // ✅ Cleanup event listeners
+        document.removeEventListener('click', this.handleDocumentClick);
+        document.removeEventListener('mousedown', this.handleDocumentClick);
+        
+        if (this.focusTimeout) {
+            clearTimeout(this.focusTimeout);
+        }
     },
     
     methods: {
         // ====================================================================
         // USB SCANNER — Gestion via Input (SIMPLIFIÉ)
         // ====================================================================
+        // ====================================================================
+        // ✅ NOUVEAU: Gestion intelligente du focus
+        // ====================================================================
+        // ✅ DÉTECTER CLICKS INTENTIONNELS
+        handleDocumentClick(event) {
+            const target = event.target;
+            const isInteractive = target.matches(
+                'button, a, input, select, textarea, [role="button"], .modal, .modal *'
+            );
+            
+            if (isInteractive) {
+                console.log('🖱️ [SCANNER] Click interactif détecté, pas de re-focus');
+                this.shouldRefocus = false;
+                
+                if (this.focusTimeout) {
+                    clearTimeout(this.focusTimeout);
+                }
+                this.focusTimeout = setTimeout(() => {
+                    this.shouldRefocus = true;
+                    console.log('✅ [SCANNER] Re-focus réactivé');
+                }, 2000);
+            }
+        },
+    
+        //--------------------------------------------------------------------------
+        // ✅ Focus intelligent sur l'input USB
+        //--------------------------------------------------------------------------
         focusInput() {
             // ✅ Focus sur l'input caché pour capturer le scanner USB
             const input = document.getElementById('usb-scanner-input');
@@ -77,21 +121,37 @@ createApp({
                 console.log('✅ [SCANNER] Input focusé');
             }
         },
-        
+        //-------------------------------------------------------------------------
+        // ✅ Gestion des événements de focus pour maintenir le focus sur l'input
+        //-------------------------------------------------------------------------
         onInputFocus() {
             console.log('📝 [SCANNER] Input focusé');
         },
         
+        //--------------------------------------------------------------------------
+        // ✅ Re-focus automatique si l'input perd le focus (et que c'est autorisé)
+        //--------------------------------------------------------------------------
         onInputBlur() {
             console.log('⚠️ [SCANNER] Input perdu le focus');
-            // ✅ Re-focus automatique après 100ms
-            setTimeout(() => {
-                if (this.scannerType === 'usb' && this.scannerActive) {
-                    this.focusInput();
+            
+            // ✅ CONTRÔLE: Ne re-focus que si shouldRefocus = true
+            if (this.shouldRefocus && this.scannerType === 'usb' && this.scannerActive) {
+                if (this.focusTimeout) {
+                    clearTimeout(this.focusTimeout);
                 }
-            }, 100);
+                this.focusTimeout = setTimeout(() => {
+                    if (this.shouldRefocus) {
+                        this.focusInput();
+                    }
+                }, 300);  // ✅ 300ms au lieu de 100ms
+            } else {
+                console.log('⚠️ [SCANNER] Re-focus désactivé (click intentionnel)');
+            }
         },
-        
+
+        //--------------------------------------------------------------------------
+        // ✅ Gestion de la saisie dans l'input USB
+        //--------------------------------------------------------------------------
         onEnterPressed() {
             // ✅ Entrée pressée = fin du scan
             console.log('⏎ [SCANNER] Enter détecté');
@@ -111,12 +171,16 @@ createApp({
             // ✅ Garder le focus
             this.focusInput();
         },
-        
+       //-------------------------------------------------------------------------- 
+       // ✅ Réinitialiser le scanner (ex: bouton reset)
+       //-------------------------------------------------------------------------- 
         resetScanner() {
             this.usbBuffer = '';
             this.focusInput();
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Changer de type de scanner (USB/Webcam)
+        //-------------------------------------------------------------------------- 
         switchScannerType(type) {
             console.log('🔄 [SCANNER] switchScannerType()', type);
             this.scannerType = type;
@@ -131,12 +195,31 @@ createApp({
         },
         
         // ====================================================================
+        // Gestion modals — Désactiver re-focus pendant modal ouverte
+        // ====================================================================
+        openModal(modalName) {
+            this[modalName] = true;
+            this.shouldRefocus = false;  // ✅ Désactiver re-focus pendant modal
+        },
+        
+        closeModal(modalName) {
+            this[modalName] = false;
+            // ✅ Réactiver re-focus après 500ms (après fermeture modal)
+            setTimeout(() => {
+                this.shouldRefocus = true;
+                this.focusInput();
+            }, 500);
+        },
+        
+        // ====================================================================
         // WEBCAM — ZXing (Inchangé)
         // ====================================================================
         initZXing() {
             this.codeReader = new ZXing.BrowserMultiFormatReader();
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Démarrer la caméra et le scanner ZXing
+        //--------------------------------------------------------------------------
         async startCamera() {
             if (this.scannerType === 'usb') return;
             
@@ -163,11 +246,17 @@ createApp({
                 alert('Impossible d\'accéder à la caméra');
             }
         },
-        
+        //--------------------------------------------------------------------------
+        // Arrêter la caméra et le scanner ZXing
+        //--------------------------------------------------------------------------
         stopCamera() {
             if (this.codeReader) this.codeReader.reset();
             this.cameraActive = false;
         },
+
+        //--------------------------------------------------------------------------
+        // ✅ Basculer entre caméra active/inactive
+        //--------------------------------------------------------------------------
         
         toggleCamera() {
             if (this.cameraActive) this.stopCamera();
@@ -195,16 +284,31 @@ createApp({
             try {
                 console.log('🌐 [SCANNER] Appel API:', `/scanner/scan/${extractedUuid}/`);
                 
-                const response = await window.apiClient.get(`/scanner/scan/${extractedUuid}/`);
+                const response = await window.apiClient.get(`/scanner/scan/${extractedUuid}/`, {
+                    params: {
+                        context: this.scanContext,
+                        location_id: this.currentLocationId,
+                        user: window.currentUser ? window.currentUser.username : 'unknown',
+                    }
+                });
                 
                 if (!response.data) throw new Error('Données vides');
                 
                 this.scanResult = response.data;
                 console.log('✅ [SCANNER] Asset:', response.data.name);
                 
+                // ✅ NOUVEAU: Stocker scan_log_id pour référence
+                if (response.data.scan_log_id) {
+                    localStorage.setItem('last_scan_log_id', response.data.scan_log_id);
+                    console.log('📝 [SCANNER] ScanLog ID:', response.data.scan_log_id);
+                }
+                
                 this.addToHistory({
                     uuid: extractedUuid,
                     asset_name: response.data.name || 'Asset sans nom',
+                    scanned_at: new Date().toISOString(),
+                    code_type: response.data.code_type, // ✅ Nouveau
+                    scan_log_id: response.data.scan_log_id, // ✅ Nouveau
                     scanned_at: new Date().toISOString()
                 });
                 
@@ -234,6 +338,10 @@ createApp({
             }
         },
         
+        //--------------------------------------------------------------------------
+        // ✅ Extraire l'UUID d'un QR Code ou code-barres
+        // Supporte les formats personnalisés et les UUID bruts
+        //--------------------------------------------------------------------------
         extractUuidFromQR(qrText) {
             if (!qrText || typeof qrText !== 'string') return qrText;
             
@@ -262,7 +370,9 @@ createApp({
             if (this.scanHistory.length > 10) this.scanHistory.pop();
             localStorage.setItem('cmdb_scan_history', JSON.stringify(this.scanHistory));
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Charger l'historique des scans depuis localStorage
+        //--------------------------------------------------------------------------
         loadScanHistory() {
             const saved = localStorage.getItem('cmdb_scan_history');
             if (saved) {
@@ -272,7 +382,9 @@ createApp({
                 } catch (e) { this.scanHistory = []; }
             }
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Fetch des locations pour le déplacement d'assets
+        //--------------------------------------------------------------------------
         async fetchLocations() {
             try {
                 const response = await window.apiClient.get('/inventory/location/');
@@ -281,7 +393,9 @@ createApp({
                 this.locations = [];
             }
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Déplacer un asset vers une nouvelle location
+        //--------------------------------------------------------------------------
         async moveAsset() {
             if (!this.moveLocation || !this.scanResult?.id) {
                 alert('Aucun asset sélectionné');
@@ -298,7 +412,9 @@ createApp({
                 alert('❌ Erreur déplacement');
             }
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Obtenir la classe CSS pour le statut d'un asset
+        //--------------------------------------------------------------------------
         getStatusClass(status) {
             const map = {
                 'active': 'status-active', 'maintenance': 'status-maintenance',
@@ -306,7 +422,9 @@ createApp({
             };
             return map[status] || 'status-stock';
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Formater une date pour l'affichage
+        //--------------------------------------------------------------------------
         formatDate(dateStr) {
             if (!dateStr) return '-';
             return new Date(dateStr).toLocaleDateString('fr-FR', {
@@ -314,7 +432,9 @@ createApp({
                 hour: '2-digit', minute: '2-digit'
             });
         },
-        
+        //--------------------------------------------------------------------------
+        // ✅ Jouer un son de beep pour confirmer le scan
+        //--------------------------------------------------------------------------    
         playBeep() {
             try {
                 const audio = new AudioContext();

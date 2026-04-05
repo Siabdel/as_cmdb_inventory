@@ -1,6 +1,5 @@
 from django.contrib import admin
 from scanner.models import QRCode, ScanLog
-from .models import ScannedAsset, ScanResult 
 from django.utils.html import format_html
 
 
@@ -28,5 +27,3 @@ class ScannedAssetAdmin(admin.ModelAdmin):
 
 admin.site.register(QRCode, QRCodeAdmin)
 admin.site.register(ScanLog, ScanLogAdmin)
-admin.site.register(ScannedAsset, ScannedAssetAdmin)
-admin.site.register(ScanResult)

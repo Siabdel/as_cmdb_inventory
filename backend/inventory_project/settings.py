@@ -41,9 +41,15 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
 ]
 
 THIRD_PARTY_APPS = [
+    # User Authentication
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
@@ -60,6 +66,16 @@ LOCAL_APPS = [
     'scanner.apps.ScannerConfig',  # ← important pour le ready()
     'cmdb_admin',
     'printer',  # ← NOUVELLE APP
+]
+
+# ✅ SITE_ID — REQUIS pour allauth
+SITE_ID = 1
+# ✅ Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    # Django backend par défaut (requis pour admin)
+    'django.contrib.auth.backends.ModelBackend',
+    # allauth backend
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 # Configuration printer
@@ -85,6 +101,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # Doit être en haut, avant CommonMiddleware
     'django.middleware.csrf.CsrfViewMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Middleware pour django-allauth
     'django.contrib.auth.middleware.AuthenticationMiddleware',  # Required for user auth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -103,6 +120,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                ##'allauth.account.context_processors.account',  # ← Optionnel mais recommandé
             ],
         },
     },
@@ -110,6 +128,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'inventory_project.wsgi.application'
 ASGI_APPLICATION = 'inventory_project.asgi.application'
+
+# ✅ django-allauth Configuration
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # 'optional' ou 'mandatory'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+ACCOUNT_UNIQUE_EMAIL = True
+
+# Redirections après login/logout
+LOGIN_REDIRECT_URL = '/admin/'  # ← Votre dashboard
+LOGOUT_REDIRECT_URL = '/accounts/login/'
+ACCOUNT_LOGOUT_ON_GET = True  # Permet logout via GET (pour bouton)
+
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
