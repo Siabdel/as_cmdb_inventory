@@ -13,3 +13,4 @@ class InventoryConfig(AppConfig):
     def ready(self):
         """Méthode appelée quand l'application est prête"""
         # Importer les signaux si nécessaire
+

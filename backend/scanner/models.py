@@ -1,91 +1,66 @@
+# backend/scanner/models.py
 from django.db import models
-
-# Create your models here.
-
-# scanner/models.py
 import uuid
 from django.db import models
 from inventory.models import Asset, TimeStampMixin
 
-# backend/scanner/models.py
-# backend/scanner/models.py (extrait)
 from django.conf import settings
 
-
-class QRCode(models.Model):
+# backend/scanner/models.py — VERSION CLARIFIÉE ✅
+CODE_TYPE_CHOICES = [
+        ('qr_code', 'QR Code (2D)'),
+        ('barcode_128', 'Code 128 (1D)'),
+        ('barcode_ean13', 'EAN-13 (1D)'),
+        ('barcode_ean8', 'EAN-8 (1D)'),
+        ('barcode_39', 'Code 39 (1D)'),
+    ]
+class ScannableCode(models.Model):
     """
+    Modèle générique pour TOUS les codes scannables.
     Supporte QR Code ET Code-Barres.
     QR Code associé à un Asset.
     Généré automatiquement à la création d'Asset (signal post_save).
     Le champ code_type distingue le format.
     """
     
-    CODE_TYPE_CHOICES = [
-        ('qr_code', 'QR Code (2D)'),
-        ('barcode_serial', 'Code-Barres Serial (1D)'),
-        ('barcode_internal', 'Code-Barres Interne (1D)'),
-        ('barcode_reference', 'Code-Barres Référence Stock'),
-    ]
     
-    asset = models.OneToOneField(
-        'inventory.Asset',
-        on_delete=models.CASCADE,
-        related_name='qrcode'
-    )
-    uuid_token = models.UUIDField(
-        default=uuid.uuid4,
-        unique=True,
-        db_index=True,
-        editable=False,
-        help_text="Token unique pour l'URL de scan (ex: qr_asset_<id>_<uuid>)"
-    )
-    code = models.CharField(
-        max_length=255,
-        unique=True,
-        help_text="Format: qr_asset_<id>_<uuid>",
-        default="default_qr_code",
-    )
-
-    # ✅ NOUVEAU: Type de code pour traçabilité
-    code_type = models.CharField(
-        max_length=30,
-        choices=CODE_TYPE_CHOICES,
-        default='qr_code',
-        help_text="Format du code: QR, Barcode Serial, Barcode Internal"
-    )
     
-    # Image stockée en filesystem, URL en base
-    image = models.ImageField(
-        upload_to='qr_codes/%Y/%m/',
-        blank=True,
-        null=True,
-        help_text="Image PNG du QR Code"
-    )
+    asset = models.OneToOneField('inventory.Asset', on_delete=models.CASCADE, related_name='scannable_codes', null=True, blank=True)
+    stock_item = models.ForeignKey('stock.StockItem', on_delete=models.CASCADE, related_name='scannable_codes', null=True, blank=True)
+    
+    code = models.CharField(max_length=255, unique=True, db_index=True, help_text="Valeur du code scanné")
+    code_type = models.CharField(max_length=30, choices=CODE_TYPE_CHOICES, default='qr_code')
+    
+    # Champs spécifiques QR Code (optionnels)
+    uuid_token = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True, null=True, blank=True)
+    
+    # Image (QR ou Barcode)
+    image = models.ImageField(upload_to='scannable_codes/%Y/%m/', blank=True, null=True)
     
     # Métadonnées
     format = models.CharField(max_length=20, default='PNG')
-    size = models.PositiveIntegerField(default=300)  # pixels
-    error_correction = models.CharField(max_length=10, default='M')
+    size = models.PositiveIntegerField(default=300)
     
     # Tracking
     is_active = models.BooleanField(default=True)
     scanned_count = models.PositiveIntegerField(default=0)
     last_scanned_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Code Scannable (QR/Barres)'
-        verbose_name_plural = 'Codes Scannables (QR/Barres)'
-        indexes = [
-            models.Index(fields=['uuid_token']),
-            models.Index(fields=['code']),
-            models.Index(fields=['asset', '-created_at']),
-        ]
+        verbose_name = 'Code Scannable'
+        verbose_name_plural = 'Codes Scannables'
     
     def __str__(self):
-        return f"QR Code - Asset {self.asset.id} ({self.asset.name})"
+        return f"{self.get_code_type_display()} - {self.code}"
+    
+    def __str__(self):
+        if self.asset:
+            return f"{self.get_code_type_display()} - Asset {self.asset.id} ({self.asset.name})"
+        elif self.stock_item:
+            return f"{self.get_code_type_display()} - Stock Item {self.stock_item.id} ({self.stock_item.name})"
+        else:   
+            return f"QR Code - Asset {self.asset.id} ({self.asset.name})"
     
     @property
     def url(self):
@@ -123,9 +98,9 @@ class ScanLog(TimeStampMixin):
         ('audit', 'Audit'),
         ('reception', 'Réception'),
     ]
-    qrcode      = models.ForeignKey(QRCode, on_delete=models.CASCADE,
+    ScannableCode = models.ForeignKey(ScannableCode, on_delete=models.CASCADE,
                                     related_name='scan_logs')
-    # ✅ NOUVEAU: Lien direct à l'asset (même sans QRCode)
+    # ✅ NOUVEAU: Lien direct à l'asset (même sans ScannableCode)
     asset = models.ForeignKey('inventory.Asset', on_delete=models.CASCADE, related_name='scan_logs', null=True, blank=True)
     
     # ✅ NOUVEAU: Lien au stock item (pour consommables)
@@ -149,7 +124,7 @@ class ScanLog(TimeStampMixin):
     # ✅ NOUVEAU: Type de code scanné
     code_type = models.CharField(
         max_length=30,
-        choices=QRCode.CODE_TYPE_CHOICES,
+        choices=CODE_TYPE_CHOICES,
         default='qr_code'
     )
     

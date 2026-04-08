@@ -27,3 +27,4 @@ qrcode[pil]
 reportlab
 pyusb
 python-barcode
+colorlog>=6.7.0

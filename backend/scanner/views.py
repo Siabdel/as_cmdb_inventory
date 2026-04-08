@@ -1,24 +1,26 @@
+
 # backend/scanner/views.py
 # ============================================================================
 # SCANNER VIEWS — QR Code & Code-Barres
-# Version: 2.0 — Mars 2026
+# Version: 3.0 — Correction erreur request
 # ============================================================================
 
-from django.shortcuts import render 
+from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.http import HttpRequest  # ✅ Import explicite si besoin
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import QRCode, ScanLog
+from rest_framework.request import Request  # ✅ DRF Request type
+
+from .models import ScannableCode as QRCode, ScanLog
 from inventory.models import Asset
 from inventory.serializers import AssetDetailSerializer
 from maintenance.models import MaintenanceTicket as Ticket
+
 import logging
-
 logger = logging.getLogger(__name__)
-
-
 # ============================================================================
 # FONCTIONS UTILITAIRES
 # ============================================================================
@@ -112,133 +114,140 @@ def resolve_by_serial_or_code(code):
 
 # backend/scanner/views.py
 
-# backend/scanner/views.py
-# ============================================================================
-# SCANNER VIEWS — QR Code & Code-Barres
-# Version: 3.0 — Correction erreur request
-# ============================================================================
-
-from django.shortcuts import render, get_object_or_404
-from django.utils import timezone
-from django.http import HttpRequest  # ✅ Import explicite si besoin
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.request import Request  # ✅ DRF Request type
-
-from .models import QRCode, ScanLog
-from inventory.models import Asset
-from inventory.serializers import AssetDetailSerializer
-from maintenance.models import MaintenanceTicket as Ticket
-
-import logging
-logger = logging.getLogger(__name__)
-
-
 @api_view(['GET'])
-@permission_classes([AllowAny])  # Public — accès sans auth
+@permission_classes([AllowAny])
 def resolve_qr(request, uuid_token):
     """
     Endpoint scanné par mobile/desktop.
-    Enregistre le ScanLog et retourne la fiche asset complète.
+    Accepte : QR Code UUID, Serial Number, Internal Code, ou Stock Reference
     
-    URL: GET /api/v1/scanner/scan/<uuid_token>/
-    
-    Formats supportés:
-    1. QR Code UUID
-    2. Serial Number (code-barres)
-    3. Internal Code (code-barres)
+    ✅ CORRECTION: Support multi-format + traçabilité complète
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     logger.info(f'[QR] Scan reçu: {uuid_token}')
     
     qr_obj = None
     asset = None
+    stock_item = None
     code_type = 'unknown'
     
     # ====================================================================
-    # 1. RÉSOLUTION DU CODE SCANNÉ
+    # 1. RÉSOLUTION DU CODE SCANNÉ — MULTI-FORMAT
     # ====================================================================
     try:
         # Essayer QR Code UUID
         qr_obj = QRCode.objects.select_related('asset').get(uuid_token=uuid_token)
         asset = qr_obj.asset
-        code_type = 'qr_code'
+        code_type = qr_obj.code_type
         logger.info(f'[QR] Trouvé par QRCode UUID: {uuid_token}')
         
     except QRCode.DoesNotExist:
-        # Essayer par serial_number (code-barres)
+        # Essayer par serial_number (Asset)
         try:
             asset = Asset.objects.select_related(
                 'category', 'brand', 'location', 'assigned_to'
             ).prefetch_related('tags').get(serial_number=uuid_token)
             
-            qr_obj, created = QRCode.objects.get_or_create(asset=asset)
+            qr_obj, created = QRCode.objects.get_or_create(
+                asset=asset,
+                code_type='barcode_serial',
+                defaults={'code': uuid_token}
+            )
             if created:
-                qr_obj.code_type = 'barcode_serial'
-                qr_obj.save(update_fields=['code_type'])
-                from scanner.signals import _generate_qr_image
-                _generate_qr_image(qr_obj)
+                logger.info(f'[QR] QRCode barcode_serial créé pour asset {asset.id}')
             
             code_type = 'barcode_serial'
             logger.info(f'[QR] Trouvé par serial_number: {uuid_token}')
             
         except Asset.DoesNotExist:
-            # Essayer par internal_code (code-barres)
+            # Essayer par internal_code (Asset)
             try:
                 asset = Asset.objects.select_related(
                     'category', 'brand', 'location', 'assigned_to'
                 ).prefetch_related('tags').get(internal_code=uuid_token)
                 
-                qr_obj, created = QRCode.objects.get_or_create(asset=asset)
+                qr_obj, created = QRCode.objects.get_or_create(
+                    asset=asset,
+                    code_type='barcode_internal',
+                    defaults={'code': uuid_token}
+                )
                 if created:
-                    qr_obj.code_type = 'barcode_internal'
-                    qr_obj.save(update_fields=['code_type'])
+                    logger.info(f'[QR] QRCode barcode_internal créé pour asset {asset.id}')
                 
                 code_type = 'barcode_internal'
                 logger.info(f'[QR] Trouvé par internal_code: {uuid_token}')
                 
             except Asset.DoesNotExist:
-                logger.warning(f'[QR] Code non reconnu: {uuid_token}')
-                return Response(
-                    {'error': f'Code scanné invalide: {uuid_token}'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                # ✅ NOUVEAU: Essayer StockItem (consommables)
+                try:
+                    from stock.models import StockItem
+                    stock_item = StockItem.objects.select_related(
+                        'category', 'location'
+                    ).get(reference=uuid_token)
+                    
+                    qr_obj, created = QRCode.objects.get_or_create(
+                        stock_item=stock_item,
+                        code_type='barcode_reference',
+                        defaults={'code': f"REF-{uuid_token}-{stock_item.id}"}
+                    )
+                    
+                    code_type = 'barcode_reference'
+                    logger.info(f'[QR] Trouvé StockItem: {uuid_token}')
+                    
+                except Exception:
+                    logger.warning(f'[QR] Code non reconnu: {uuid_token}')
+                    return Response(
+                        {'error': f'Code scanné invalide: {uuid_token}'},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
     
     # ====================================================================
-    # 2. ENREGISTRER SCANLOG — ✅ CORRECTION ICI
+    # 2. ENREGISTRER SCANLOG COMPLET
     # ====================================================================
     try:
-        # ✅ CORRECTION: Utiliser request.user pour l'utilisateur connecté
-        # Si authentifié: username, sinon: 'anonymous' ou IP
+        # Capturer contexte depuis request
+        scan_context = request.query_params.get('context', 'inventory')
+        
+        # Capturer location depuis request ou fallback asset
+        location_id = request.query_params.get('location')
+        location_at_scan = None
+        if location_id:
+            try:
+                from inventory.models import Location
+                location_at_scan = Location.objects.get(id=location_id)
+            except:
+                pass
+        if not location_at_scan and asset and hasattr(asset, 'current_location'):
+            location_at_scan = asset.current_location
+        
+        # Utiliser request.user pour scanned_by
         if hasattr(request, 'user') and request.user.is_authenticated:
             scanned_by = request.user.username
-            logger.info(f'[QR] Utilisateur authentifié: {scanned_by}')
         else:
-            # Fallback: essayer query param ou anonymous
             scanned_by = request.query_params.get('user', 'anonymous')
-            logger.info(f'[QR] Utilisateur non authentifié: {scanned_by}')
-        
-        # Déterminer la localisation actuelle
-        location_at_scan = None
-        if asset and hasattr(asset, 'current_location'):
-            location_at_scan = asset.current_location
         
         scan_log = ScanLog.objects.create(
             qrcode=qr_obj,
             asset=asset,
-            scanned_by=scanned_by,  # ✅ Maintenant correct
+            stock_item=stock_item,
+            scanned_by=scanned_by,
+            scanned_by_user=request.user if request.user.is_authenticated else None,
             ip_address=request.META.get('REMOTE_ADDR'),
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            scan_context=scan_context,
             code_type=code_type,
             scanned_code=uuid_token,
             location_at_scan=location_at_scan,
+            notes=f'Scan via {request.META.get("HTTP_USER_AGENT", "inconnu")}'
         )
         logger.info(f'[QR] ScanLog créé: {scan_log.id} par {scanned_by}')
         
     except Exception as e:
         logger.error(f'[QR] Erreur création ScanLog: {e}', exc_info=True)
         # Continue même si ScanLog échoue (non bloquant)
+    
     # ====================================================================
     # 3. INCRÉMENTER COMPTEUR
     # ====================================================================
@@ -254,12 +263,23 @@ def resolve_qr(request, uuid_token):
     # ====================================================================
     # 4. RETOURNER LES DONNÉES
     # ====================================================================
-    data = AssetDetailSerializer(asset).data
-    data['scanned_code'] = uuid_token
-    data['code_type'] = code_type
+    if asset:
+        from inventory.serializers import AssetDetailSerializer
+        data = AssetDetailSerializer(asset).data
+        data['scanned_code'] = uuid_token
+        data['code_type'] = code_type
+        data['scan_log_id'] = scan_log.id if 'scan_log' in locals() else None
+        return Response(data)
     
-    logger.info(f'[QR] Scan terminé: {asset.name}')
-    return Response(data)
+    elif stock_item:
+        from stock.serializers import StockItemSerializer
+        data = StockItemSerializer(stock_item).data
+        data['scanned_code'] = uuid_token
+        data['code_type'] = code_type
+        data['scan_log_id'] = scan_log.id if 'scan_log' in locals() else None
+        return Response(data)
+    
+    return Response({'error': 'Erreur inattendue'}, status=500)
 
 
 @api_view(['POST'])

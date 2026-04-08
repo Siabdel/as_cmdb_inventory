@@ -12,6 +12,9 @@ import traceback
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# ✅ Créer le répertoire de logs
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
 
 # Load environment variables
 env = environ.Env()
@@ -56,16 +59,18 @@ THIRD_PARTY_APPS = [
     'django_filters',
     'django_extensions',
     'drf_spectacular',
+    'debug_toolbar',
 ]
 
 
 LOCAL_APPS = [
+    # Apps locales
     'inventory',
-    'stock',
     'maintenance',
     'scanner.apps.ScannerConfig',  # ← important pour le ready()
     'cmdb_admin',
     'printer',  # ← NOUVELLE APP
+    'stock.apps.StockConfig',  # ✅ Doit être présent
 ]
 
 # ✅ SITE_ID — REQUIS pour allauth
@@ -105,6 +110,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',  # Required for user auth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'inventory_project.urls'
@@ -339,4 +345,96 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Dashboard', 'description': 'Statistiques et tableaux de bord'},
         {'name': 'Auth', 'description': 'Authentification'},
     ],
+}
+
+# ✅ Configuration Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+        'colored': {
+            '()': 'colorlog.ColoredFormatter',
+            'format': '%(log_color)s%(levelname)s%(reset)s %(asctime)s %(module)s %(message)s',
+            'log_colors': {
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'bold_red',
+            },
+        },
+    },
+    'handlers': {
+        # Console (terminal)
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'colored',
+            'level': 'DEBUG',
+        },
+        # Fichier général
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'django.log',
+            'formatter': 'verbose',
+            'level': 'INFO',
+        },
+        # Fichier scanner (spécifique)
+        'scanner_file': {
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'scanner.log',
+            'formatter': 'verbose',
+            'level': 'DEBUG',
+        },
+        # Fichier erreurs
+        'errors_file': {
+            'class': 'logging.FileHandler',
+            'filename': LOGS_DIR / 'errors.log',
+            'formatter': 'verbose',
+            'level': 'ERROR',
+        },
+    },
+    'loggers': {
+        # Logger général Django
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        # Logger spécifique Scanner
+        'scanner': {
+            'handlers': ['console', 'scanner_file', 'errors_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Logger spécifique Inventory
+        'inventory': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Logger spécifique Maintenance
+        'maintenance': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Logger spécifique Stock
+        'stock': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
 }

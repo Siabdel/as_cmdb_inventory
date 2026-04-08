@@ -30,3 +30,15 @@ p = Usb(idVendor=0x0419, idProduct=0x3c00, interface=0, in_ep=0x82, out_ep=0x01)
 p.text("Debian 12 OK\n")
 p.close()
 print("✅ Imprimé !")
+
+StockItem.objects.get(reference="RAM-32GB-DDR4").delete()  # Supprimer l'item s'il existe déjà pour éviter les doublons
+## Créer un item de stock pour tester le signal de création de barcode
+StockItem.objects.create(
+    reference='RAM-32GB-DDR4',
+    name='Barrette RAM 32Go DDR4',
+    item_type='spare_part',
+    quantity=50,  # 100 unités identiques
+    min_quantity=10,
+    unit_price=75.00,
+)
+# 

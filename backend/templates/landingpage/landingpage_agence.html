@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechSolutions Pro - Solutions Web & SaaS pour Entreprises</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-blue: #2563EB;
+            --primary-purple: #7C3AED;
+            --primary-teal: #14B8A6;
+            --primary-orange: #F97316;
+            --dark: #1E293B;
+            --light: #F8FAFC;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Navbar */
+        .navbar {
+            transition: all 0.3s;
+            padding: 1rem 0;
+        }
+
+        .navbar.scrolled {
+            background: white;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-content .lead {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .hero-features {
+            display: flex;
+            gap: 2rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .hero-feature i {
+            color: #FCD34D;
+        }
+
+        /* Services Section */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .section-header p {
+            color: #64748B;
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            transition: all 0.3s;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 2rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .service-card p {
+            color: #64748B;
+            line-height: 1.6;
+        }
+
+        .service-features {
+            list-style: none;
+            padding: 0;
+            margin-top: 1.5rem;
+        }
+
+        .service-features li {
+            padding: 0.5rem 0;
+            color: #475569;
+        }
+
+        .service-features li i {
+            color: var(--primary-teal);
+            margin-right: 0.5rem;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: linear-gradient(135deg, var(--dark) 0%, #334155 100%);
+            color: white;
+            padding: 5rem 0;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-box .number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-teal), var(--primary-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-box .label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Why Choose Us */
+        .feature-box {
+            padding: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-content h4 {
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+
+        .feature-content p {
+            color: #64748B;
+            margin: 0;
+        }
+
+        /* Pricing */
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            border: 2px solid #E2E8F0;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .pricing-card.popular {
+            border-color: var(--primary-purple);
+            transform: scale(1.05);
+        }
+
+        .badge-popular {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-blue));
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin: 1rem 0;
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: #64748B;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .pricing-features li i {
+            color: var(--primary-teal);
+            margin-right: 0.75rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-purple));
+            color: white;
+            padding: 5rem 0;
+            text-align: center;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 4rem 0 2rem;
+        }
+
+        footer h5 {
+            color: var(--primary-teal);
+            margin-bottom: 1.5rem;
+        }
+
+        footer a {
+            color: #94A3B8;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2.2rem;
+            }
+            
+            .pricing-card.popular {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top" :class="{ 'scrolled': scrolled }">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-code me-2"></i>TechSolutions Pro
+            </a>
+            <button class="navbar-toggler" type="button" @click="toggleMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" :class="{ 'show': menuOpen }">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#solutions">Solutions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#sectors">Secteurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#pricing">Tarifs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">À propos</a></li>
+                    <li class="nav-item ms-3">
+                        <a href="#contact" class="btn btn-primary-custom">Demander une démo</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-7 hero-content" data-aos="fade-right">
+                    <h1>Solutions Web & SaaS Innovantes pour Votre Entreprise</h1>
+                    <p class="lead">ERP, E-commerce, Logistique, CMDB, QR Code, CMS, Prise de RDV, Conciergerie... Transformez votre business avec nos solutions sur mesure.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="#contact" class="btn btn-light btn-lg px-5 fw-bold">
+                            <i class="fas fa-rocket me-2"></i>Commencer maintenant
+                        </a>
+                        <a href="#solutions" class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-play-circle me-2"></i>Découvrir nos solutions
+                        </a>
+                    </div>
+                    <div class="hero-features">
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                            <span>SaaS Cloud</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                            <span>Support 24/7</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle fa-lg"></i>
+                            <span>Sans engagement</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block" data-aos="fade-left">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Dashboard" class="img-fluid rounded-4 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solutions Section -->
+    <section id="solutions" class="py-5 my-5">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Nos Solutions</h2>
+                <p>Des outils puissants et intuitifs pour optimiser chaque aspect de votre entreprise</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" v-for="(solution, index) in solutions" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i :class="solution.icon"></i>
+                        </div>
+                        <h3>{{ solution.title }}</h3>
+                        <p>{{ solution.description }}</p>
+                        <ul class="service-features">
+                            <li v-for="(feature, i) in solution.features" :key="i">
+                                <i class="fas fa-check"></i> {{ feature }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="0">
+                    <div class="stat-box">
+                        <div class="number">500+</div>
+                        <div class="label">Clients satisfaits</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="stat-box">
+                        <div class="number">50+</div>
+                        <div class="label">Solutions déployées</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="stat-box">
+                        <div class="number">99.9%</div>
+                        <div class="label">Uptime garanti</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="stat-box">
+                        <div class="number">24/7</div>
+                        <div class="label">Support technique</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section id="about" class="py-5 my-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="section-header text-start mb-4">
+                        <h2>Pourquoi Nous Choisir ?</h2>
+                        <p>Une expertise technologique au service de votre croissance</p>
+                    </div>
+                    <div class="feature-box" v-for="(feature, index) in features" :key="index" data-aos="fade-right" :data-aos-delay="index * 100">
+                        <div class="feature-icon">
+                            <i :class="feature.icon"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>{{ feature.title }}</h4>
+                            <p>{{ feature.description }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Team" class="img-fluid rounded-4 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-5 my-5">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Nos Offres</h2>
+                <p>Des tarifs adaptés à chaque taille d'entreprise</p>
+            </div>
+            
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-4 col-md-6" v-for="(plan, index) in pricingPlans" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="pricing-card" :class="{ 'popular': plan.popular }">
+                        <div v-if="plan.popular" class="badge-popular">POPULAIRE</div>
+                        <div class="pricing-header">
+                            <h3>{{ plan.name }}</h3>
+                            <div class="price">
+                                {{ plan.price }}€
+                                <span>/mois</span>
+                            </div>
+                            <p class="text-muted">{{ plan.description }}</p>
+                        </div>
+                        <ul class="pricing-features">
+                            <li v-for="(feat, i) in plan.features" :key="i">
+                                <i class="fas fa-check"></i> {{ feat }}
+                            </li>
+                        </ul>
+                        <button class="btn btn-primary-custom w-100">
+                            Choisir ce plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact" class="cta-section">
+        <div class="container" data-aos="zoom-in">
+            <h2>Prêt à transformer votre entreprise ?</h2>
+            <p class="lead mb-4">Contactez-nous dès maintenant pour une démo gratuite et personnalisée</p>
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <form class="bg-white p-4 rounded-4 text-dark">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control form-control-lg" placeholder="Votre nom" required>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="email" class="form-control form-control-lg" placeholder="Votre email" required>
+                            </div>
+                            <div class="col-12">
+                                <input type="text" class="form-control form-control-lg" placeholder="Nom de l'entreprise">
+                            </div>
+                            <div class="col-12">
+                                <select class="form-select form-select-lg">
+                                    <option selected>Solution souhaitée</option>
+                                    <option>ERP</option>
+                                    <option>E-commerce</option>
+                                    <option>Logistique</option>
+                                    <option>CMDB & Inventory</option>
+                                    <option>CMS</option>
+                                    <option>Prise de RDV</option>
+                                    <option>Conciergerie</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <textarea class="form-control form-control-lg" rows="4" placeholder="Votre message"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary-custom btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Envoyer ma demande
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5><i class="fas fa-code me-2"></i>TechSolutions Pro</h5>
+                    <p>Votre partenaire technologique pour des solutions web et SaaS innovantes. Nous transformons vos défis en opportunités digitales.</p>
+                    <div class="d-flex gap-3">
+                        <a href="#"><i class="fab fa-linkedin fa-lg"></i></a>
+                        <a href="#"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#"><i class="fab fa-instagram fa-lg"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Solutions</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">ERP</a></li>
+                        <li><a href="#">E-commerce</a></li>
+                        <li><a href="#">Logistique</a></li>
+                        <li><a href="#">CMDB</a></li>
+                        <li><a href="#">CMS</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Entreprise</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">À propos</a></li>
+                        <li><a href="#">Carrières</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Presse</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Ressources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutoriels</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-envelope me-2"></i>contact@techsolutions.pro</li>
+                        <li><i class="fas fa-phone me-2"></i>+33 1 23 45 67 89</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i>Paris, France</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: rgba(255,255,255,0.1)">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2026 TechSolutions Pro. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                scrolled: false,
+                menuOpen: false,
+                solutions: [
+                    {
+                        title: 'ERP Intégré',
+                        icon: 'fas fa-building',
+                        description: 'Gérez tous les aspects de votre entreprise avec un ERP complet et modulaire.',
+                        features: ['Comptabilité & Finance', 'Gestion RH', 'Stocks & Inventaire', 'Reporting avancé', 'Multi-sociétés']
+                    },
+                    {
+                        title: 'E-commerce',
+                        icon: 'fas fa-shopping-cart',
+                        description: 'Créez votre boutique en ligne puissante et évolutive.',
+                        features: ['Catalogue produits', 'Paiement sécurisé', 'Gestion commandes', 'Multi-canaux', 'SEO optimisé']
+                    },
+                    {
+                        title: 'Logistique & Supply Chain',
+                        icon: 'fas fa-truck',
+                        description: 'Optimisez votre chaîne logistique de bout en bout.',
+                        features: ['Gestion entrepôts', 'Suivi livraisons', 'Optimisation tournées', 'Traçabilité temps réel', 'Gestion transporteurs']
+                    },
+                    {
+                        title: 'CMDB & Inventory Scan',
+                        icon: 'fas fa-server',
+                        description: 'Gérez votre parc informatique et assets avec traçabilité QR Code.',
+                        features: ['Inventaire automatique', 'QR Code & Barres', 'Traçabilité complète', 'Maintenance préventive', 'Rapports détaillés']
+                    },
+                    {
+                        title: 'CMS Sur Mesure',
+                        icon: 'fas fa-laptop-code',
+                        description: 'Créez et gérez votre contenu web facilement.',
+                        features: ['Éditeur visuel', 'Multi-langues', 'Gestion médias', 'Workflows publication', 'Analytics intégrés']
+                    },
+                    {
+                        title: 'Système de Prise de RDV',
+                        icon: 'fas fa-calendar-check',
+                        description: 'Automatisez la gestion de vos rendez-vous.',
+                        features: ['Booking en ligne', 'Rappels automatiques', 'Gestion plannings', 'Paiement acompte', 'Statistiques RDV']
+                    },
+                    {
+                        title: 'Conciergerie Digitale',
+                        icon: 'fas fa-concierge-bell',
+                        description: 'Solution complète pour gestion locative et services.',
+                        features: ['Gestion locations', 'Check-in/out digital', 'Services additionnels', 'Facturation auto', 'Portail locataires']
+                    }
+                ],
+                features: [
+                    {
+                        icon: 'fas fa-cloud',
+                        title: '100% Cloud & SaaS',
+                        description: 'Accédez à vos applications depuis n\'importe où, à tout moment. Infrastructure sécurisée et scalable.'
+                    },
+                    {
+                        icon: 'fas fa-shield-alt',
+                        title: 'Sécurité Maximale',
+                        description: 'Vos données sont protégées par les meilleurs standards de sécurité. Backup automatique et cryptage SSL.'
+                    },
+                    {
+                        icon: 'fas fa-cogs',
+                        title: 'Personnalisation Totale',
+                        description: 'Solutions adaptables à vos processus métiers spécifiques. Intégration API disponible.'
+                    },
+                    {
+                        icon: 'fas fa-headset',
+                        title: 'Support Expert 24/7',
+                        description: 'Notre équipe technique est disponible 24h/24 et 7j/7 pour vous accompagner.'
+                    },
+                    {
+                        icon: 'fas fa-bolt',
+                        title: 'Déploiement Rapide',
+                        description: 'Mise en place accélérée grâce à nos méthodologies agiles. Formation incluse.'
+                    },
+                    {
+                        icon: 'fas fa-chart-line',
+                        title: 'Évolutivité Garantie',
+                        description: 'Vos solutions grandissent avec votre entreprise. Pas de limite d\'utilisateurs.'
+                    }
+                ],
+                pricingPlans: [
+                    {
+                        name: 'Starter',
+                        price: 99,
+                        description: 'Pour les petites entreprises',
+                        features: ['1 solution au choix', 'Jusqu\'à 5 utilisateurs', '5 Go de stockage', 'Support email', 'Mises à jour incluses', 'API basique'],
+                        popular: false
+                    },
+                    {
+                        name: 'Professional',
+                        price: 299,
+                        description: 'Pour les entreprises en croissance',
+                        features: ['3 solutions au choix', 'Jusqu\'à 25 utilisateurs', '50 Go de stockage', 'Support prioritaire 24/7', 'Personnalisation avancée', 'API complète', 'Formation incluse'],
+                        popular: true
+                    },
+                    {
+                        name: 'Enterprise',
+                        price: 699,
+                        description: 'Pour les grandes organisations',
+                        features: ['Solutions illimitées', 'Utilisateurs illimités', 'Stockage illimité', 'Support dédié 24/7', 'Développement sur mesure', 'Infrastructure dédiée', 'SLA garanti', 'Audit sécurité'],
+                        popular: false
+                    }
+                ]
+            }
+        },
+        mounted() {
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 100
+            });
+
+            window.addEventListener('scroll', () => {
+                this.scrolled = window.scrollY > 50;
+            });
+        },
+        methods: {
+            toggleMenu() {
+                this.menuOpen = !this.menuOpen;
+            }
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>

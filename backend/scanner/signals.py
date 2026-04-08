@@ -9,7 +9,7 @@ import os
 import io
 import uuid
 import logging
-import qrcode
+import ScannableCode
 from datetime import datetime
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -17,41 +17,40 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 
 from inventory.models import Asset
-from scanner.models import QRCode
+from scanner.models import ScannableCode
 
 logger = logging.getLogger(__name__)
 
-
 def _generate_qr_image(qr_obj):
     """
-    Fonction pour générer l'image QR code à partir d'un objet QRCode.
+    Fonction pour générer l'image QR code à partir d'un objet ScannableCode.
     
     Args:
-        qr_obj: Instance de QRCode (doit avoir asset, uuid_token, code)
+        qr_obj: Instance de ScannableCode (doit avoir asset, uuid_token, code)
     
     Returns:
         str: URL de l'image générée ou None en cas d'erreur
     
     Workflow:
         1. Créer données QR (code = qr_asset_<id>_<uuid>)
-        2. Générer image PNG avec qrcode library
+        2. Générer image PNG avec ScannableCode library
         3. Sauvegarder dans media/qr_codes/YYYY/MM/
-        4. Mettre à jour QRCode.image
+        4. Mettre à jour ScannableCode.image
         5. Retourner URL
     
     Exemple:
-        >>> qr_obj = QRCode.objects.create(asset=asset)
+        >>> qr_obj = ScannableCode.objects.create(asset=asset)
         >>> url = _generate_qr_image(qr_obj)
         >>> print(url)
         '/media/qr_codes/2026/03/qr_asset_152_abc123.png'
     """
     try:
         if not qr_obj or not qr_obj.asset:
-            logger.error(f'[QR] QRCode ou Asset invalide: {qr_obj}')
+            logger.error(f'[QR] ScannableCode ou Asset invalide: {qr_obj}')
             return None
         
         if not qr_obj.uuid_token:
-            logger.error(f'[QR] uuid_token manquant pour QRCode {qr_obj.id}')
+            logger.error(f'[QR] uuid_token manquant pour ScannableCode {qr_obj.id}')
             return None
         
         # ====================================================================
@@ -83,13 +82,13 @@ def _generate_qr_image(qr_obj):
         # Génération image QR (inchangé)
         # ====================================================================
         import io
-        import qrcode
+        import ScannableCode
         from django.core.files.base import ContentFile
         from datetime import datetime
         
-        qr = qrcode.QRCode(
+        qr = ScannableCode.ScannableCode(
             version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            error_correction=ScannableCode.constants.ERROR_CORRECT_M,
             box_size=10,
             border=4,
         )
@@ -128,10 +127,10 @@ def _generate_qr_image(qr_obj):
 # ============================================================================
 
 @receiver(post_save, sender=Asset)
-def auto_create_qrcode(sender, instance, created, **kwargs):
+def auto_create_ScannableCode(sender, instance, created, **kwargs):
     """
     Signal post_save sur Asset.
-    Crée automatiquement QRCode + génère image à la création d'Asset.
+    Crée automatiquement ScannableCode + génère image à la création d'Asset.
     
     Déclencheur: Asset.objects.create() ou Asset.save()
     Condition: created=True (nouvel asset uniquement)
@@ -139,7 +138,7 @@ def auto_create_qrcode(sender, instance, created, **kwargs):
     Workflow:
         1. Asset créé via POST /api/v1/inventory/assets/
         2. Signal post_save déclenché
-        3. QRCode.objects.create(asset=instance)
+        3. ScannableCode.objects.create(asset=instance)
         4. _generate_qr_image(qr_obj) appelé
         5. Image sauvegardée dans media/qr_codes/
     """
@@ -147,16 +146,18 @@ def auto_create_qrcode(sender, instance, created, **kwargs):
         logger.info(f'[SIGNAL] Asset créé: {instance.id} - {instance.name}')
         
         try:
-            # Créer QRCode associé
-            qr_obj, created = QRCode.objects.get_or_create(
+            # Créer ScannableCode associé
+            qr_obj, created = ScannableCode.objects.get_or_create(
                 asset=instance,
                 defaults={
                     'code': f"qr_asset_{instance.id}_",  # Sera mis à jour avec uuid
+                    'uuid_token': uuid.uuid4(),
+                    
                 }
             )
             
             if created:
-                logger.info(f'[SIGNAL] QRCode créé pour Asset {instance.id}')
+                logger.info(f'[SIGNAL] ScannableCode créé pour Asset {instance.id}')
                 
                 # Générer image QR
                 image_url = _generate_qr_image(qr_obj)
@@ -166,10 +167,10 @@ def auto_create_qrcode(sender, instance, created, **kwargs):
                 else:
                     logger.warning(f'[SIGNAL] Échec génération QR pour Asset {instance.id}')
             else:
-                logger.info(f'[SIGNAL] QRCode existant pour Asset {instance.id}')
+                logger.info(f'[SIGNAL] ScannableCode existant pour Asset {instance.id}')
                 
         except Exception as e:
-            logger.error(f'[SIGNAL] Erreur création QRCode: {str(e)}', exc_info=True)
+            logger.error(f'[SIGNAL] Erreur création ScannableCode: {str(e)}', exc_info=True)
 
 
 @receiver(post_save, sender=Asset)
@@ -188,8 +189,8 @@ def regenerate_qr_on_serial_change(sender, instance, **kwargs):
         return  # Asset pas encore créé
     
     try:
-        # Vérifier si QRCode existe
-        qr_obj = QRCode.objects.filter(asset=instance).first()
+        # Vérifier si ScannableCode existe
+        qr_obj = ScannableCode.objects.filter(asset=instance).first()
         
         if qr_obj:
             # Régénérer QR (utile si serial_number changé)
@@ -222,7 +223,7 @@ def generate_missing_qr_codes():
     from django.utils import timezone
     
     # Trouver assets sans QR Code
-    assets_without_qr = Asset.objects.filter(qrcode__isnull=True)
+    assets_without_qr = Asset.objects.filter(ScannableCode__isnull=True)
     count = assets_without_qr.count()
     
     logger.info(f'[BATCH] {count} assets sans QR Code trouvés')
@@ -232,7 +233,7 @@ def generate_missing_qr_codes():
     
     for asset in assets_without_qr:
         try:
-            qr_obj, created = QRCode.objects.get_or_create(asset=asset)
+            qr_obj, created = ScannableCode.objects.get_or_create(asset=asset)
             
             if created:
                 image_url = _generate_qr_image(qr_obj)
@@ -281,7 +282,7 @@ def regenerate_all_qr_codes():
     
     for asset in all_assets:
         try:
-            qr_obj, _ = QRCode.objects.get_or_create(asset=asset)
+            qr_obj, _ = ScannableCode.objects.get_or_create(asset=asset)
             image_url = _generate_qr_image(qr_obj)
             
             if image_url:
@@ -300,3 +301,125 @@ def regenerate_all_qr_codes():
         'failed': failed,
         'timestamp': timezone.now()
     }
+
+    # backend/scanner/signals.py
+
+# ============================================================================
+# SIGNALS POUR GÉNÉRATION AUTOMATIQUE QR CODE & BARCODE
+# Version: 2.0 — Mars 2026
+# ============================================================================
+@receiver(post_save, sender=Asset)
+def auto_create_scannable_code(sender, instance, created, **kwargs):
+    """
+    Signal post_save sur Asset.
+    Crée QR Code + Barcode selon le type d'asset.
+    """
+    if not created:
+        return  # Ne traiter que les nouveaux assets
+    
+    logger.info(f'[SIGNAL] Asset créé: {instance.id} - {instance.name}')
+    
+    try:
+        # ====================================================================
+        # DÉTERMINER LE TYPE DE CODE À GÉNÉRER (Par Catégorie)
+        # ====================================================================
+        category_name = instance.category.name.lower() if instance.category else ''
+        
+        # ✅ Règles métier pour déterminer code_type
+        if any(kw in category_name for kw in ['laptop', 'pc', 'serveur', 'server', 'network', 'switch', 'routeur']):
+            # Asset IT Critique → QR Code + Barcode Serial
+            codes_to_create = [
+                {'code_type': 'qr_code', 'generate_image': True},
+                {'code_type': 'barcode_serial', 'generate_image': False},
+            ]
+            
+        elif any(kw in category_name for kw in ['écran', 'monitor', 'clavier', 'souris', 'périphérique']):
+            # Périphérique → Barcode Serial uniquement (QR optionnel)
+            codes_to_create = [
+                {'code_type': 'barcode_serial', 'generate_image': False},
+            ]
+            
+        elif any(kw in category_name for kw in ['ram', 'ssd', 'disque', 'batterie', 'consommable']):
+            # Consommable → Rien (géré via StockItem)
+            codes_to_create = []
+            
+        else:
+            # Default → QR Code uniquement
+            codes_to_create = [
+                {'code_type': 'qr_code', 'generate_image': True},
+            ]
+        
+        # ====================================================================
+        # CRÉER LES CODES SCANNABLES
+        # ====================================================================
+        for config in codes_to_create:
+            code_type = config['code_type']
+            generate_image = config['generate_image']
+            
+            # Déterminer le code à stocker
+            if code_type == 'qr_code':
+                code_value = f"qr_asset_{instance.id}_{uuid.uuid4()}"
+            elif code_type == 'barcode_serial' and instance.serial_number:
+                code_value = instance.serial_number
+            elif code_type == 'barcode_internal' and instance.internal_code:
+                code_value = instance.internal_code
+            else:
+                continue  # Skip si pas de données
+            
+            # Créer l'objet ScannableCode/Barcode
+            scannable, scannable_created = ScannableCode.objects.get_or_create(
+                asset=instance,
+                code_type=code_type,
+                defaults={
+                    'code': code_value,
+                    'uuid_token': uuid.uuid4() if code_type == 'qr_code' else None,
+                }
+            )
+            
+            if scannable_created:
+                logger.info(f'[SIGNAL] {code_type} créé pour Asset {instance.id}')
+                
+                # Générer image uniquement pour QR Code
+                if generate_image and code_type == 'qr_code':
+                    image_url = _generate_qr_image(scannable)
+                    if image_url:
+                        logger.info(f'[SIGNAL] Image QR générée: {image_url}')
+                        
+    except Exception as e:
+        logger.error(f'[SIGNAL] Erreur création code scannable: {str(e)}', exc_info=True)
+
+
+# ============================================================================
+# SIGNAL POUR CRÉATION AUTOMATIQUE BARCODE RÉFÉRENCE STOCK
+# ============================================================================
+@receiver(post_save, sender='stock.StockItem')
+def auto_create_stock_barcode(sender, instance, created, **kwargs):
+    """
+    Signal post_save sur StockItem.
+    Crée automatiquement un Barcode de référence pour les consommables.
+    
+    Format: REF-<reference>-<id>
+    """
+    if not created:
+        return
+    
+    logger.info(f'[SIGNAL] StockItem créé: {instance.id} - {instance.reference}')
+    
+    try:
+        # Créer Barcode de référence
+        code_value = f"REF-{instance.reference}-{instance.id}"
+        
+        barcode, created = ScannableCode.objects.get_or_create(
+            stock_item=instance,
+            code_type='barcode_reference',
+            defaults={
+                'code': code_value,
+                'uuid_token': None,  # Pas d'UUID pour les barcodes référence
+            }
+        )
+        
+        if created:
+            logger.info(f'[SIGNAL] Barcode référence créé pour StockItem {instance.id}')
+            
+    except Exception as e:
+        logger.error(f'[SIGNAL] Erreur création barcode stock: {str(e)}', exc_info=True)

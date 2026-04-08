@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from inventory.models import Asset
 from maintenance.models import MaintenanceTicket as Ticket
-from .models import QRCode, ScanLog
 from printer.models import PrintLog
 # backend/scanner/views.py
 from django.http import HttpResponse
@@ -17,12 +16,12 @@ from maintenance.models import MaintenanceTicket as Ticket
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, F, Sum
 from datetime import timedelta
-from scanner.models import QRCode, ScanLog
+from scanner.models import ScannableCode as QRCode, ScanLog
 from inventory.models import Asset
 from inventory.serializers import AssetDetailSerializer
 from maintenance.models import MaintenanceTicket as Ticket
 # backend/scanner/api/views.py
-from rest_framework import viewsets, status, decorators
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404

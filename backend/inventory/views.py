@@ -15,17 +15,15 @@ from datetime import timedelta
 from rest_framework.views import APIView
 #  
 from django.contrib.admin.views.decorators import staff_member_required
-from scanner.models import QRCode
 
 # backend/scanner/views.py (VERSION CORRIGÉE)
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import mm
 from reportlab.lib.utils import ImageReader
 from PIL import Image
 from io import BytesIO
-from scanner.models import QRCode
+from scanner.models import ScannableCode as QRCode
 # qrcode et barcode
 import qrcode
 import barcode

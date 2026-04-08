@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechSolutions Pro - Solutions Web & SaaS pour Entreprises</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AOS Animation -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========================================
+           CHARTE GRAPHIQUE GITEX AFRICA
+           ======================================== */
+        :root {
+            /* Couleurs Principales */
+            --gitex-red: #E63946;
+            --gitex-red-dark: #C1121F;
+            --gitex-white: #FFFFFF;
+            --gitex-yellow: #F4A261;
+            --gitex-yellow-light: #FFD166;
+            --gitex-gold: #E9C46A;
+            
+            /* Couleurs Secondaires */
+            --gitex-teal: #2A9D8F;
+            --gitex-dark: #1A1A1A;
+            --gitex-gray: #6C757D;
+            --gitex-light: #F8F9FA;
+            
+            /* Dégradés GITEX Style */
+            --gradient-primary: linear-gradient(135deg, var(--gitex-red) 0%, var(--gitex-yellow) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--gitex-yellow) 0%, var(--gitex-gold) 100%);
+            --gradient-dark: linear-gradient(135deg, var(--gitex-dark) 0%, #2d2d2d 100%);
+        }
+
+        /* ========================================
+           BASE STYLES
+           ======================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            color: var(--gitex-dark);
+            background: var(--gitex-white);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        a {
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        /* ========================================
+           MOTIF AFRICAIN GÉOMÉTRIQUE (SVG Pattern)
+           ======================================== */
+        .african-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23E63946' fill-opacity='0.03'%3E%3Cpath d='M20 20h10v10H20V20zm30 0h10v10H50V20zm-30 30h10v10H20V50zm30 0h10v10H50V50z'/%3E%3Cpath d='M40 0l10 20H30L40 0zm0 80l10-20H30l10 20zM0 40l20-10v20L0 40zm80 0l-20-10v20l20-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .african-pattern-yellow {
+            background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4A261' fill-opacity='0.05'%3E%3Cpath d='M20 20h10v10H20V20zm30 0h10v10H50V20zm-30 30h10v10H20V50zm30 0h10v10H50V50z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* ========================================
+           NAVIGATION
+           ======================================== */
+        .navbar {
+            padding: 1rem 0;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.15);
+            padding: 0.75rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: var(--gitex-red) !important;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .navbar-brand i {
+            color: var(--gitex-yellow);
+        }
+
+        .navbar-brand span {
+            color: var(--gitex-dark);
+        }
+
+        .nav-link {
+            font-weight: 600;
+            color: var(--gitex-dark) !important;
+            margin: 0 0.75rem;
+            position: relative;
+            padding: 0.5rem 0 !important;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            width: 80%;
+            height: 3px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        /* ========================================
+           BOUTONS GITEX STYLE
+           ======================================== */
+        .btn-gitex-primary {
+            background: var(--gradient-primary);
+            color: var(--gitex-white);
+            border: none;
+            padding: 0.875rem 2.25rem;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+
+        .btn-gitex-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-gitex-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(230, 57, 70, 0.4);
+            color: var(--gitex-white);
+        }
+
+        .btn-gitex-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-gitex-secondary {
+            background: transparent;
+            color: var(--gitex-white);
+            border: 2px solid var(--gitex-white);
+            padding: 0.875rem 2.25rem;
+            font-weight: 700;
+            font-size: 1rem;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-gitex-secondary:hover {
+            background: var(--gitex-white);
+            color: var(--gitex-red);
+            transform: translateY(-3px);
+        }
+
+        .btn-gitex-outline {
+            background: transparent;
+            color: var(--gitex-red);
+            border: 2px solid var(--gitex-red);
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-gitex-outline:hover {
+            background: var(--gitex-red);
+            color: var(--gitex-white);
+            transform: translateY(-2px);
+        }
+
+        /* ========================================
+           HERO SECTION
+           ======================================== */
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            background: var(--gradient-dark);
+            display: flex;
+            align-items: center;
+            color: var(--gitex-white);
+            overflow: hidden;
+            padding: 2rem 0;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at top right, rgba(244, 162, 97, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(230, 57, 70, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-content h1 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-content .lead {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+            max-width: 600px;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-features {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .hero-feature {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+        }
+
+        .hero-feature i {
+            color: var(--gitex-yellow);
+            font-size: 1.25rem;
+        }
+
+        .hero-image {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-image img {
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border: 4px solid var(--gitex-white);
+        }
+
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 100%;
+            height: 100%;
+            border: 3px solid var(--gitex-yellow);
+            border-radius: 20px;
+            z-index: -1;
+        }
+
+        /* ========================================
+           SECTION HEADERS
+           ======================================== */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--gitex-dark);
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .section-header h2.text-white::after {
+            background: var(--gitex-white);
+        }
+
+        .section-header p {
+            color: var(--gitex-gray);
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 1.5rem auto 0;
+        }
+
+        .section-header.text-white p {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        /* ========================================
+           SERVICE CARDS
+           ======================================== */
+        .service-card {
+            background: var(--gitex-white);
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+            z-index: 2;
+        }
+
+        .service-card:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 25px 50px rgba(230, 57, 70, 0.15);
+            border-color: transparent;
+        }
+
+        .service-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--gitex-white);
+            font-size: 2rem;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .service-card:hover .service-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .service-icon.yellow {
+            background: var(--gradient-secondary);
+        }
+
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--gitex-dark);
+        }
+
+        .service-card p {
+            color: var(--gitex-gray);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .service-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .service-features li {
+            padding: 0.5rem 0;
+            color: var(--gitex-dark);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .service-features li i {
+            color: var(--gitex-red);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        /* ========================================
+           STATS SECTION
+           ======================================== */
+        .stats-section {
+            background: var(--gradient-dark);
+            color: var(--gitex-white);
+            padding: 5rem 0;
+            position: relative;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .stat-box .number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-box .label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-box:last-child::after {
+            display: none;
+        }
+
+        /* ========================================
+           FEATURES SECTION
+           ======================================== */
+        .feature-box {
+            padding: 1.5rem;
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-box:hover {
+            transform: translateX(10px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-primary);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gitex-white);
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-box:hover .feature-icon {
+            transform: scale(1.1);
+        }
+
+        .feature-icon.yellow {
+            background: var(--gradient-secondary);
+        }
+
+        .feature-content h4 {
+            margin-bottom: 0.5rem;
+            color: var(--gitex-dark);
+            font-size: 1.2rem;
+        }
+
+        .feature-content p {
+            color: var(--gitex-gray);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        /* ========================================
+           PRICING CARDS
+           ======================================== */
+        .pricing-card {
+            background: var(--gitex-white);
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--gradient-primary);
+        }
+
+        .pricing-card:hover {
+            border-color: var(--gitex-red);
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(230, 57, 70, 0.15);
+        }
+
+        .pricing-card.popular {
+            border-color: var(--gitex-red);
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(230, 57, 70, 0.2);
+        }
+
+        .pricing-card.popular:hover {
+            transform: scale(1.05) translateY(-8px);
+        }
+
+        .badge-popular {
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: var(--gradient-primary);
+            color: var(--gitex-white);
+            padding: 0.5rem 50px;
+            transform: rotate(45deg);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--gitex-dark);
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--gitex-red);
+            margin: 1rem 0;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .price .currency {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .price .period {
+            font-size: 1rem;
+            color: var(--gitex-gray);
+            font-weight: 400;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+
+        .pricing-features li {
+            padding: 0.875rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+        }
+
+        .pricing-features li i {
+            color: var(--gitex-red);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .pricing-features li.not-included {
+            color: var(--gitex-gray);
+            opacity: 0.6;
+        }
+
+        .pricing-features li.not-included i {
+            color: var(--gitex-gray);
+        }
+
+        /* ========================================
+           CTA SECTION
+           ======================================== */
+        .cta-section {
+            background: var(--gradient-primary);
+            color: var(--gitex-white);
+            padding: 5rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20l10 10-10 10-10-10zM80 20l10 10-10 10-10-10zM20 80l10 10-10 10-10-10zM80 80l10 10-10 10-10-10z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E");
+            opacity: 0.3;
+        }
+
+        .cta-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-section .lead {
+            font-size: 1.25rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-form {
+            background: var(--gitex-white);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .form-control {
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 0.875rem 1.25rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--gitex-red);
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+        }
+
+        .form-select {
+            border: 2px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 0.875rem 1.25rem;
+            font-size: 1rem;
+        }
+
+        .form-select:focus {
+            border-color: var(--gitex-red);
+            box-shadow: 0 0 0 4px rgba(230, 57, 70, 0.1);
+        }
+
+        /* ========================================
+           FOOTER
+           ======================================== */
+        footer {
+            background: var(--gitex-dark);
+            color: var(--gitex-white);
+            padding: 4rem 0 2rem;
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        footer h5 {
+            color: var(--gitex-yellow);
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            position: relative;
+            padding-bottom: 0.75rem;
+        }
+
+        footer h5::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: var(--gitex-red);
+            border-radius: 2px;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.75);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: block;
+            padding: 0.35rem 0;
+            font-size: 0.95rem;
+        }
+
+        footer a:hover {
+            color: var(--gitex-yellow);
+            transform: translateX(5px);
+        }
+
+        footer .social-links {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        footer .social-links a {
+            display: flex;
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            align-items: center;
+            justify-content: center;
+            color: var(--gitex-white);
+            font-size: 1.1rem;
+            padding: 0;
+        }
+
+        footer .social-links a:hover {
+            background: var(--gitex-red);
+            transform: translateY(-4px);
+            color: var(--gitex-white);
+        }
+
+        footer .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 2rem;
+            margin-top: 3rem;
+            text-align: center;
+        }
+
+        footer .footer-bottom p {
+            margin: 0;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        /* ========================================
+           ANIMATIONS & UTILITIES
+           ======================================== */
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .fade-in-up.delay-1 { animation-delay: 0.1s; }
+        .fade-in-up.delay-2 { animation-delay: 0.2s; }
+        .fade-in-up.delay-3 { animation-delay: 0.3s; }
+        .fade-in-up.delay-4 { animation-delay: 0.4s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* ========================================
+           RESPONSIVE DESIGN
+           ======================================== */
+        @media (max-width: 992px) {
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+            
+            .hero-content .lead {
+                font-size: 1.1rem;
+            }
+            
+            .pricing-card.popular {
+                transform: none;
+            }
+            
+            .pricing-card.popular:hover {
+                transform: translateY(-8px);
+            }
+            
+            .stat-box::after {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-cta-group {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .hero-features {
+                gap: 1rem;
+            }
+            
+            .section-header h2 {
+                font-size: 2rem;
+            }
+            
+            .cta-section h2 {
+                font-size: 2rem;
+            }
+            
+            .price {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            .service-card {
+                padding: 2rem;
+            }
+            
+            .service-icon {
+                width: 70px;
+                height: 70px;
+                font-size: 1.75rem;
+            }
+        }
+
+        /* ========================================
+           LOADING & INTERACTIVE STATES
+           ======================================== */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gitex-white);
+            opacity: 0.8;
+            animation: bounce 2s infinite;
+            z-index: 2;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        .scroll-indicator i {
+            font-size: 1.5rem;
+        }
+
+        .scroll-indicator span {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top" :class="{ 'scrolled': scrolled }">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-code"></i>
+                <span>TechSolutions</span>Pro
+            </a>
+            <button class="navbar-toggler border-0" type="button" @click="toggleMenu" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" :class="{ 'show': menuOpen }">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#solutions">Solutions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#sectors">Secteurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#pricing">Tarifs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#about">À propos</a></li>
+                    <li class="nav-item ms-lg-3 mt-3 mt-lg-0">
+                        <a href="#contact" class="btn btn-gitex-primary">
+                            <i class="fas fa-rocket me-2"></i>Démo Gratuite
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="african-pattern"></div>
+        <div class="container position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-7 hero-content" data-aos="fade-right" data-aos-duration="1000">
+                    <h1 class="mb-4">
+                        Solutions Web & <span>SaaS Innovantes</span><br>
+                        pour Votre Entreprise
+                    </h1>
+                    <p class="lead">
+                        ERP, E-commerce, Logistique, CMDB, QR Code, CMS, Prise de RDV, Conciergerie... 
+                        Transformez votre business avec nos solutions cloud sur mesure, inspirées de l'excellence GITEX.
+                    </p>
+                    <div class="hero-cta-group">
+                        <a href="#contact" class="btn btn-gitex-primary pulse">
+                            <i class="fas fa-play me-2"></i>Commencer maintenant
+                        </a>
+                        <a href="#solutions" class="btn btn-gitex-secondary">
+                            <i class="fas fa-eye me-2"></i>Découvrir nos solutions
+                        </a>
+                    </div>
+                    <div class="hero-features">
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>SaaS Cloud Sécurisé</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Support 24/7</span>
+                        </div>
+                        <div class="hero-feature">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Sans engagement</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 hero-image" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                         alt="Dashboard SaaS" 
+                         class="img-fluid">
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <i class="fas fa-chevron-down"></i>
+            <span>Découvrir</span>
+        </div>
+    </section>
+
+    <!-- Solutions Section -->
+    <section id="solutions" class="py-5 my-5 position-relative">
+        <div class="african-pattern african-pattern-yellow"></div>
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Nos Solutions</h2>
+                <p>Des outils puissants et intuitifs pour optimiser chaque aspect de votre entreprise, avec l'expertise technologique GITEX Africa</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" v-for="(solution, index) in solutions" :key="index" 
+                     data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="service-card">
+                        <div class="service-icon" :class="{ 'yellow': index % 2 === 1 }">
+                            <i :class="solution.icon"></i>
+                        </div>
+                        <h3>{{ solution.title }}</h3>
+                        <p>{{ solution.description }}</p>
+                        <ul class="service-features">
+                            <li v-for="(feature, i) in solution.features" :key="i">
+                                <i class="fas fa-check-circle"></i> {{ feature }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="african-pattern"></div>
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="row">
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="0">
+                    <div class="stat-box">
+                        <div class="number">500+</div>
+                        <div class="label">Clients satisfaits</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="stat-box">
+                        <div class="number">50+</div>
+                        <div class="label">Solutions déployées</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="stat-box">
+                        <div class="number">99.9%</div>
+                        <div class="label">Uptime garanti</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="stat-box">
+                        <div class="number">24/7</div>
+                        <div class="label">Support technique</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section id="about" class="py-5 my-5 bg-light position-relative">
+        <div class="african-pattern african-pattern-yellow"></div>
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <div class="section-header text-start mb-4">
+                        <h2>Pourquoi Nous Choisir ?</h2>
+                        <p>Une expertise technologique inspirée de GITEX Africa, au service de votre croissance</p>
+                    </div>
+                    <div class="feature-box" v-for="(feature, index) in features" :key="index" 
+                         data-aos="fade-right" :data-aos-delay="index * 100">
+                        <div class="feature-icon" :class="{ 'yellow': index % 2 === 1 }">
+                            <i :class="feature.icon"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h4>{{ feature.title }}</h4>
+                            <p>{{ feature.description }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                         alt="Équipe TechSolutions" 
+                         class="img-fluid rounded-4 shadow-lg">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-5 my-5 position-relative">
+        <div class="african-pattern"></div>
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Nos Offres</h2>
+                <p>Des tarifs adaptés à chaque taille d'entreprise, avec la flexibilité SaaS</p>
+            </div>
+            
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-4 col-md-6" v-for="(plan, index) in pricingPlans" :key="index" 
+                     data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="pricing-card" :class="{ 'popular': plan.popular }">
+                        <div v-if="plan.popular" class="badge-popular">Populaire</div>
+                        <div class="pricing-header">
+                            <h3>{{ plan.name }}</h3>
+                            <p class="text-muted mb-3">{{ plan.description }}</p>
+                            <div class="price">
+                                <span class="currency">€</span>
+                                {{ plan.price }}
+                                <span class="period">/mois</span>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li v-for="(feat, i) in plan.features" :key="i" :class="{ 'not-included': feat.notIncluded }">
+                                <i :class="feat.notIncluded ? 'fas fa-times' : 'fas fa-check-circle'"></i> 
+                                {{ feat.text }}
+                            </li>
+                        </ul>
+                        <button class="btn btn-gitex-outline w-100" :class="{ 'btn-gitex-primary': plan.popular }">
+                            {{ plan.popular ? 'Commencer maintenant' : 'Choisir ce plan' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact" class="cta-section">
+        <div class="african-pattern"></div>
+        <div class="container position-relative" style="z-index: 1;">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="zoom-in">
+                    <h2 class="mb-3">Prêt à transformer votre entreprise ?</h2>
+                    <p class="lead mb-4">
+                        Contactez-nous dès maintenant pour une démo gratuite et personnalisée 
+                        de nos solutions SaaS
+                    </p>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-xl-6" data-aos="fade-up" data-aos-delay="200">
+                    <form class="cta-form" @submit.prevent="submitForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" v-model="form.name" placeholder="Votre nom *" required>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="email" class="form-control" v-model="form.email" placeholder="Votre email *" required>
+                            </div>
+                            <div class="col-12">
+                                <input type="text" class="form-control" v-model="form.company" placeholder="Nom de l'entreprise">
+                            </div>
+                            <div class="col-12">
+                                <select class="form-select" v-model="form.solution">
+                                    <option value="" disabled selected>Solution souhaitée *</option>
+                                    <option value="erp">ERP Intégré</option>
+                                    <option value="ecommerce">E-commerce</option>
+                                    <option value="logistics">Logistique & Supply Chain</option>
+                                    <option value="cmdb">CMDB & Inventory Scan</option>
+                                    <option value="cms">CMS Sur Mesure</option>
+                                    <option value="booking">Système de Prise de RDV</option>
+                                    <option value="concierge">Conciergerie Digitale</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <textarea class="form-control" v-model="form.message" rows="4" placeholder="Votre message ou besoins spécifiques"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-gitex-primary btn-lg w-100">
+                                    <i class="fas fa-paper-plane me-2"></i>Envoyer ma demande
+                                </button>
+                            </div>
+                        </div>
+                        <div v-if="formSubmitted" class="alert alert-success mt-3 mb-0" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>Merci ! Nous vous contacterons sous 24h.
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5><i class="fas fa-code me-2"></i>TechSolutions Pro</h5>
+                    <p class="mb-4" style="opacity: 0.85;">
+                        Votre partenaire technologique pour des solutions web et SaaS innovantes. 
+                        Nous transformons vos défis en opportunités digitales, avec l'excellence GITEX Africa.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Solutions</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">ERP Intégré</a></li>
+                        <li><a href="#">E-commerce</a></li>
+                        <li><a href="#">Logistique</a></li>
+                        <li><a href="#">CMDB & Inventory</a></li>
+                        <li><a href="#">CMS Sur Mesure</a></li>
+                        <li><a href="#">Prise de RDV</a></li>
+                        <li><a href="#">Conciergerie</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Entreprise</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">À propos</a></li>
+                        <li><a href="#">Carrières</a></li>
+                        <li><a href="#">Blog Tech</a></li>
+                        <li><a href="#">Presse</a></li>
+                        <li><a href="#">Partenaires</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Ressources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutoriels Vidéo</a></li>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Support 24/7</a></li>
+                        <li><a href="#">API Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#"><i class="fas fa-envelope me-2"></i>contact@techsolutions.pro</a></li>
+                        <li><a href="#"><i class="fas fa-phone me-2"></i>+33 1 23 45 67 89</a></li>
+                        <li><a href="#"><i class="fas fa-map-marker-alt me-2"></i>Paris, France</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 TechSolutions Pro. Tous droits réservés. | <a href="#" style="display: inline;">Mentions légales</a> | <a href="#" style="display: inline;">Politique de confidentialité</a></p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                scrolled: false,
+                menuOpen: false,
+                formSubmitted: false,
+                form: {
+                    name: '',
+                    email: '',
+                    company: '',
+                    solution: '',
+                    message: ''
+                },
+                solutions: [
+                    {
+                        title: 'ERP Intégré',
+                        icon: 'fas fa-building',
+                        description: 'Gérez tous les aspects de votre entreprise avec un ERP complet et modulaire, inspiré des standards GITEX.',
+                        features: ['Comptabilité & Finance', 'Gestion RH & Paie', 'Stocks & Inventaire', 'Reporting avancé', 'Multi-sociétés']
+                    },
+                    {
+                        title: 'E-commerce',
+                        icon: 'fas fa-shopping-cart',
+                        description: 'Créez votre boutique en ligne puissante et évolutive avec les meilleures pratiques du digital africain.',
+                        features: ['Catalogue produits illimité', 'Paiement sécurisé multi-devise', 'Gestion commandes en temps réel', 'Multi-canaux (Web/Mobile)', 'SEO optimisé']
+                    },
+                    {
+                        title: 'Logistique & Supply Chain',
+                        icon: 'fas fa-truck',
+                        description: 'Optimisez votre chaîne logistique de bout en bout avec traçabilité totale.',
+                        features: ['Gestion multi-entrepôts', 'Suivi livraisons GPS', 'Optimisation tournées IA', 'Traçabilité temps réel', 'Intégration transporteurs']
+                    },
+                    {
+                        title: 'CMDB & Inventory Scan',
+                        icon: 'fas fa-server',
+                        description: 'Gérez votre parc informatique avec traçabilité QR Code & Code-barres, standard GITEX.',
+                        features: ['Inventaire automatique', 'Génération QR Code/Barres', 'Traçabilité complète assets', 'Maintenance préventive', 'Rapports audit détaillés']
+                    },
+                    {
+                        title: 'CMS Sur Mesure',
+                        icon: 'fas fa-laptop-code',
+                        description: 'Créez et gérez votre contenu web facilement avec un éditeur intuitif.',
+                        features: ['Éditeur visuel drag & drop', 'Multi-langues natif', 'Gestion médias avancée', 'Workflows publication', 'Analytics intégrés']
+                    },
+                    {
+                        title: 'Système de Prise de RDV',
+                        icon: 'fas fa-calendar-check',
+                        description: 'Automatisez la gestion de vos rendez-vous et optimisez votre planning.',
+                        features: ['Booking en ligne 24/7', 'Rappels SMS/Email auto', 'Gestion plannings multi-agents', 'Paiement acompte intégré', 'Statistiques RDV']
+                    },
+                    {
+                        title: 'Conciergerie Digitale',
+                        icon: 'fas fa-concierge-bell',
+                        description: 'Solution complète pour gestion locative et services premium.',
+                        features: ['Gestion locations courte/longue durée', 'Check-in/out digital', 'Services additionnels marketplace', 'Facturation automatique', 'Portail locataires']
+                    }
+                ],
+                features: [
+                    {
+                        icon: 'fas fa-cloud',
+                        title: '100% Cloud & SaaS',
+                        description: 'Accédez à vos applications depuis n\'importe où. Infrastructure sécurisée AWS/Azure, scalable à l\'infini.'
+                    },
+                    {
+                        icon: 'fas fa-shield-alt',
+                        title: 'Sécurité GITEX Standard',
+                        description: 'Vos données protégées par ISO 27001, cryptage SSL/TLS, backup automatique et conformité RGPD.'
+                    },
+                    {
+                        icon: 'fas fa-cogs',
+                        title: 'Personnalisation Totale',
+                        description: 'Solutions adaptables à vos processus métiers. API REST complète et webhooks pour intégrations.'
+                    },
+                    {
+                        icon: 'fas fa-headset',
+                        title: 'Support Expert 24/7',
+                        description: 'Notre équipe technique francophone est disponible 24h/24 et 7j/7 via chat, email et téléphone.'
+                    },
+                    {
+                        icon: 'fas fa-bolt',
+                        title: 'Déploiement Rapide',
+                        description: 'Mise en place en 2-4 semaines grâce à nos méthodologies agiles. Formation et onboarding inclus.'
+                    },
+                    {
+                        icon: 'fas fa-chart-line',
+                        title: 'Évolutivité Garantie',
+                        description: 'Vos solutions grandissent avec votre entreprise. Architecture micro-services, pas de limite d\'utilisateurs.'
+                    }
+                ],
+                pricingPlans: [
+                    {
+                        name: 'Starter',
+                        price: 99,
+                        description: 'Pour les TPE et startups',
+                        features: [
+                            { text: '1 solution au choix', notIncluded: false },
+                            { text: 'Jusqu\'à 5 utilisateurs', notIncluded: false },
+                            { text: '5 Go de stockage cloud', notIncluded: false },
+                            { text: 'Support email (48h)', notIncluded: false },
+                            { text: 'Mises à jour incluses', notIncluded: false },
+                            { text: 'API basique', notIncluded: false },
+                            { text: 'Personnalisation avancée', notIncluded: true },
+                            { text: 'Formation dédiée', notIncluded: true }
+                        ],
+                        popular: false
+                    },
+                    {
+                        name: 'Professional',
+                        price: 299,
+                        description: 'Pour les PME en croissance',
+                        features: [
+                            { text: '3 solutions au choix', notIncluded: false },
+                            { text: 'Jusqu\'à 25 utilisateurs', notIncluded: false },
+                            { text: '50 Go de stockage cloud', notIncluded: false },
+                            { text: 'Support prioritaire 24/7', notIncluded: false },
+                            { text: 'Personnalisation avancée', notIncluded: false },
+                            { text: 'API complète + Webhooks', notIncluded: false },
+                            { text: 'Formation incluse (4h)', notIncluded: false },
+                            { text: 'SLA 99.5%', notIncluded: false }
+                        ],
+                        popular: true
+                    },
+                    {
+                        name: 'Enterprise',
+                        price: 699,
+                        description: 'Pour les grandes organisations',
+                        features: [
+                            { text: 'Solutions illimitées', notIncluded: false },
+                            { text: 'Utilisateurs illimités', notIncluded: false },
+                            { text: 'Stockage illimité', notIncluded: false },
+                            { text: 'Support dédié 24/7', notIncluded: false },
+                            { text: 'Développement sur mesure', notIncluded: false },
+                            { text: 'Infrastructure dédiée', notIncluded: false },
+                            { text: 'SLA garanti 99.99%', notIncluded: false },
+                            { text: 'Audit sécurité annuel', notIncluded: false }
+                        ],
+                        popular: false
+                    }
+                ]
+            }
+        },
+        mounted() {
+            // Initialize AOS with GITEX-style settings
+            AOS.init({
+                duration: 900,
+                once: true,
+                offset: 120,
+                easing: 'ease-out-cubic'
+            });
+
+            // Scroll listener for navbar
+            window.addEventListener('scroll', () => {
+                this.scrolled = window.scrollY > 50;
+            });
+        },
+        methods: {
+            toggleMenu() {
+                this.menuOpen = !this.menuOpen;
+            },
+            submitForm() {
+                // Simulate form submission
+                this.formSubmitted = true;
+                
+                // Reset form after 3 seconds
+                setTimeout(() => {
+                    this.form = {
+                        name: '',
+                        email: '',
+                        company: '',
+                        solution: '',
+                        message: ''
+                    };
+                    this.formSubmitted = false;
+                }, 5000);
+                
+                // Here you would typically send to your backend
+                console.log('Form submitted:', this.form);
+            }
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>

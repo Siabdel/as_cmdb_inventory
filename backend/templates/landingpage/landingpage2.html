@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GITEX AFRICA - Billetterie & Inscriptions</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-red: #E63946;
+            --primary-teal: #1D9A9A;
+            --primary-yellow: #F4A261;
+            --primary-green: #2A9D8F;
+            --dark: #1A1A1A;
+            --light: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background: var(--light);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Header */
+        .top-header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1rem 0;
+        }
+
+        .logo img {
+            height: 45px;
+        }
+
+        /* Hero */
+        .ticketing-hero {
+            background: linear-gradient(135deg, var(--primary-red), var(--primary-teal));
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .ticketing-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        /* Notice */
+        .notice-banner {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 5px;
+        }
+
+        .notice-banner strong {
+            color: #856404;
+        }
+
+        /* Pricing Cards */
+        .pricing-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary-red);
+            transform: scale(1.05);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+
+        .badge-popular {
+            position: absolute;
+            top: 20px;
+            right: -35px;
+            background: var(--primary-red);
+            color: white;
+            padding: 5px 40px;
+            transform: rotate(45deg);
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-header .icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-teal), var(--primary-green));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 2rem;
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary-red);
+            margin: 1rem 0;
+        }
+
+        .price .currency {
+            font-size: 1.5rem;
+            vertical-align: top;
+        }
+
+        .price .vat {
+            font-size: 0.9rem;
+            color: #999;
+            font-weight: 400;
+        }
+
+        .pricing-features {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+
+        .pricing-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+
+        .pricing-features li i {
+            color: var(--primary-green);
+            margin-right: 0.75rem;
+            width: 20px;
+        }
+
+        .pricing-features li.not-included {
+            color: #999;
+        }
+
+        .pricing-features li.not-included i {
+            color: #ccc;
+        }
+
+        .btn-get-pass {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #c1121f;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(230, 57, 70, 0.3);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--primary-red);
+            color: var(--primary-red);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        /* Training Cards */
+        .training-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+        }
+
+        .training-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .training-card h4 {
+            color: var(--primary-red);
+            margin-bottom: 0.5rem;
+        }
+
+        .training-meta {
+            display: flex;
+            gap: 1.5rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .training-meta i {
+            margin-right: 0.5rem;
+            color: var(--primary-teal);
+        }
+
+        /* Currency Switcher */
+        .currency-switcher {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 50px;
+            display: inline-flex;
+            gap: 0.5rem;
+        }
+
+        .currency-btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            background: transparent;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .currency-btn.active {
+            background: var(--primary-red);
+            color: white;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        footer a {
+            color: #aaa;
+            text-decoration: none;
+            margin: 0 1rem;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .pricing-card.featured {
+                transform: none;
+            }
+            
+            .pricing-card.featured:hover {
+                transform: translateY(-10px);
+            }
+            
+            .price {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Header -->
+    <header class="top-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <div class="logo">
+                        <img src="https://gitexafrica.com/wp-content/uploads/2024/01/gitex-africa-logo.png" alt="GITEX AFRICA">
+                    </div>
+                </div>
+                <div class="col-md-6 text-center">
+                    <div class="currency-switcher">
+                        <button class="currency-btn" :class="{ active: currency === 'MAD' }" @click="currency = 'MAD'">MAD</button>
+                        <button class="currency-btn" :class="{ active: currency === 'USD' }" @click="currency = 'USD'">USD</button>
+                    </div>
+                </div>
+                <div class="col-md-3 text-end">
+                    <a href="#" class="btn btn-outline-dark btn-sm">
+                        <i class="fas fa-user me-2"></i>Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="ticketing-hero">
+        <div class="container">
+            <h1>RÉSERVEZ VOTRE PASS GITEX AFRICA 2026</h1>
+            <p class="lead">Choisissez le pass qui correspond à vos besoins et rejoignez la révolution numérique africaine</p>
+        </div>
+    </section>
+
+    <!-- Notice -->
+    <div class="container">
+        <div class="notice-banner">
+            <strong><i class="fas fa-exclamation-triangle me-2"></i>NOTICE: STUDENT VISITOR ACCESS</strong>
+            <p class="mb-0 mt-2">Les étudiants ont accès à l'événement exclusivement le jeudi 9 avril. GITEX AFRICA étant un salon professionnel, tous les participants doivent être âgés de 18 ans ou plus.</p>
+        </div>
+    </div>
+
+    <!-- Pricing Cards -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row g-4">
+                <!-- Visitor Pass -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="0">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <div class="icon">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <h3>VISITOR</h3>
+                            <p class="text-muted">Accès de base</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '450' : '45' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Accès complet à l'exhibition</li>
+                            <li><i class="fas fa-check"></i>Networking de base</li>
+                            <li><i class="fas fa-check"></i>Accès aux stands</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Conférences</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Workshops</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Lounges</li>
+                        </ul>
+                        <button class="btn btn-outline-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- All Access Pass -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                    <div class="pricing-card featured">
+                        <div class="badge-popular">BEST SELLER</div>
+                        <div class="pricing-header">
+                            <div class="icon" style="background: linear-gradient(135deg, #E63946, #D62839);">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <h3>ALL ACCESS CONFERENCE</h3>
+                            <p class="text-muted">Expérience complète</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '1,600' : '160' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Main Stage</li>
+                            <li><i class="fas fa-check"></i>Tous les Conference Tracks</li>
+                            <li><i class="fas fa-check"></i>Tous les Workshops</li>
+                            <li><i class="fas fa-check"></i>Accès exhibition complet</li>
+                            <li><i class="fas fa-check"></i>eCertificate of Attendance</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Lounges exclusifs</li>
+                        </ul>
+                        <button class="btn btn-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Premium Pass -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <div class="icon" style="background: linear-gradient(135deg, #F4A261, #E9C46A);">
+                                <i class="fas fa-gem"></i>
+                            </div>
+                            <h3>PREMIUM PASS</h3>
+                            <p class="text-muted">Expérience VIP</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '10,500' : '1,050' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Tous les avantages All Access</li>
+                            <li><i class="fas fa-check"></i>Accès ConneXions Lounge</li>
+                            <li><i class="fas fa-check"></i>Accès Investors Lounge</li>
+                            <li><i class="fas fa-check"></i>Événements networking exclusifs</li>
+                            <li><i class="fas fa-check"></i>Priorité d'accès</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Formations certifiantes</li>
+                        </ul>
+                        <button class="btn btn-outline-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Workshop Pass -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <div class="icon" style="background: linear-gradient(135deg, #2A9D8F, #264653);">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <h3>WORKSHOP PASS</h3>
+                            <p class="text-muted">Formation pratique</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '12,000' : '1,200' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Tous les workshops</li>
+                            <li><i class="fas fa-check"></i>Accès exhibition complet</li>
+                            <li><i class="fas fa-check"></i>eCertificate of Attendance</li>
+                            <li><i class="fas fa-check"></i>Support de cours</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Conférences principales</li>
+                            <li class="not-included"><i class="fas fa-times"></i>Formation Kaspersky</li>
+                        </ul>
+                        <button class="btn btn-outline-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Certified Training -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <div class="icon" style="background: linear-gradient(135deg, #6A4C93, #4A3B63);">
+                                <i class="fas fa-certificate"></i>
+                            </div>
+                            <h3>CERTIFIED TRAINING</h3>
+                            <p class="text-muted">Certification professionnelle</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '12,000' : '1,200' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Formation certifiante 2 jours</li>
+                            <li><i class="fas fa-check"></i>9 CPE Credits</li>
+                            <li><i class="fas fa-check"></i>3 sessions interactives</li>
+                            <li><i class="fas fa-check"></i>Matériel pédagogique</li>
+                            <li><i class="fas fa-check"></i>Certification officielle</li>
+                        </ul>
+                        <button class="btn btn-outline-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Delegate Pass -->
+                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+                    <div class="pricing-card">
+                        <div class="pricing-header">
+                            <div class="icon" style="background: linear-gradient(135deg, #118AB2, #073B4C);">
+                                <i class="fas fa-briefcase"></i>
+                            </div>
+                            <h3>DELEGATE</h3>
+                            <p class="text-muted">Professionnels & Dirigeants</p>
+                            <div class="price">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? '25,000' : '2,500' }}
+                                <div class="vat">incl. 20% VAT</div>
+                            </div>
+                            <small class="text-danger fw-bold">LIMITED SEATS</small>
+                        </div>
+                        <ul class="pricing-features">
+                            <li><i class="fas fa-check"></i>Tous les avantages Premium</li>
+                            <li><i class="fas fa-check"></i>Accès Executive Summit</li>
+                            <li><i class="fas fa-check"></i>Rencontres B2B organisées</li>
+                            <li><i class="fas fa-check"></i>Dîner de gala</li>
+                            <li><i class="fas fa-check"></i>Kit délégué exclusif</li>
+                            <li><i class="fas fa-check"></i>Accès prioritaire</li>
+                        </ul>
+                        <button class="btn btn-outline-primary btn-get-pass">
+                            GET YOUR PASS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certified Trainings Detail -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">Formations Certifiantes Disponibles</h2>
+            <div class="row">
+                <div class="col-lg-6" v-for="(training, index) in trainings" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="training-card">
+                        <h4><i class="fas fa-graduation-cap me-2"></i>{{ training.title }}</h4>
+                        <p class="text-muted">{{ training.subtitle }}</p>
+                        <div class="training-meta">
+                            <span><i class="fas fa-clock"></i>{{ training.duration }}</span>
+                            <span><i class="fas fa-certificate"></i>{{ training.credits }}</span>
+                            <span><i class="fas fa-users"></i>{{ training.level }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="price mb-0" style="font-size: 2rem;">
+                                <span class="currency">{{ currency === 'MAD' ? 'MAD' : '$' }}</span>
+                                {{ currency === 'MAD' ? training.priceMAD : training.priceUSD }}
+                            </div>
+                            <button class="btn btn-primary px-4">S'inscrire</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Student -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="zoom-in">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body p-5">
+                            <h3 class="mb-3">Vous êtes étudiant ?</h3>
+                            <p class="lead mb-4">Profitez d'un accès spécial le jeudi 9 avril pour découvrir les dernières innovations technologiques.</p>
+                            <a href="#" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-user-graduate me-2"></i>Inscription Étudiant
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p class="mb-3">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms & Conditions</a>
+                <a href="#">Contact</a>
+            </p>
+            <p class="mb-0">&copy; 2026 GITEX AFRICA. Tous droits réservés.</p>
+        </div>
+    </footer>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                currency: 'MAD',
+                trainings: [
+                    {
+                        title: 'Unleashing AI: Mastering Generative AI & Agentic Innovation',
+                        subtitle: 'Maîtriser l\'IA générative et l\'innovation agentique',
+                        duration: '2 jours',
+                        credits: 'Certification',
+                        level: 'Avancé',
+                        priceMAD: '12,000',
+                        priceUSD: '1,200'
+                    },
+                    {
+                        title: 'Cybersecurity Leadership – Policy, Frameworks, and Governance',
+                        subtitle: 'Leadership en cybersécurité et gouvernance',
+                        duration: '3 sessions',
+                        credits: '9 CPE Credits',
+                        level: 'Expert',
+                        priceMAD: '12,000',
+                        priceUSD: '1,200'
+                    }
+                ]
+            }
+        },
+        mounted() {
+            AOS.init({
+                duration: 800,
+                once: true
+            });
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GITEX AFRICA - Le Plus Grand Événement Tech & Startups d'Afrique</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-red: #E63946;
+            --primary-teal: #1D9A9A;
+            --primary-yellow: #F4A261;
+            --primary-green: #2A9D8F;
+            --dark: #1A1A1A;
+            --light: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+        }
+
+        /* Navigation */
+        .navbar {
+            transition: all 0.3s ease;
+            padding: 1rem 0;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand img {
+            height: 50px;
+        }
+
+        .nav-link {
+            font-weight: 600;
+            color: var(--dark) !important;
+            margin: 0 0.5rem;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-red) !important;
+        }
+
+        .btn-primary-custom {
+            background: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary-custom:hover {
+            background: #c1121f;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(230, 57, 70, 0.3);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            position: relative;
+            height: 100vh;
+            background: linear-gradient(135deg, rgba(230, 57, 70, 0.9) 0%, rgba(29, 154, 154, 0.9) 100%),
+                        url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') center/cover;
+            display: flex;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-content .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        /* Countdown */
+        .countdown-container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 3rem 0;
+        }
+
+        .countdown-item {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .countdown-item .number {
+            font-size: 3rem;
+            font-weight: 800;
+            display: block;
+            line-height: 1;
+        }
+
+        .countdown-item .label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-red), var(--primary-teal));
+            border-radius: 2px;
+        }
+
+        .section-header p {
+            color: #666;
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 1.5rem auto 0;
+        }
+
+        /* Sector Cards */
+        .sector-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            height: 100%;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .sector-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+
+        .sector-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary-red), var(--primary-teal));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: white;
+            font-size: 1.8rem;
+        }
+
+        .sector-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .sector-card p {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            background: linear-gradient(135deg, var(--dark) 0%, #2d2d2d 100%);
+            color: white;
+            padding: 5rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .stat-item .number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--primary-yellow);
+            display: block;
+        }
+
+        .stat-item .label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Testimonials */
+        .testimonial-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin: 1rem;
+        }
+
+        .testimonial-card .quote {
+            font-size: 1.1rem;
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .testimonial-card .author {
+            display: flex;
+            align-items: center;
+        }
+
+        .testimonial-card .author-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 1rem;
+        }
+
+        .testimonial-card .author-info h4 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: var(--dark);
+        }
+
+        .testimonial-card .author-info p {
+            margin: 0;
+            color: var(--primary-red);
+            font-size: 0.9rem;
+        }
+
+        /* Programs */
+        .program-card {
+            position: relative;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .program-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .program-card .program-header {
+            background: linear-gradient(135deg, var(--primary-teal), var(--primary-green));
+            color: white;
+            padding: 2rem;
+        }
+
+        .program-card .program-body {
+            padding: 2rem;
+        }
+
+        .program-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .program-card ul li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .program-card ul li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--primary-red);
+            font-weight: bold;
+        }
+
+        /* Sponsors */
+        .sponsor-logo {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+            filter: grayscale(100%);
+            opacity: 0.6;
+            transition: all 0.3s;
+        }
+
+        .sponsor-logo:hover {
+            filter: grayscale(0%);
+            opacity: 1;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 4rem 0 2rem;
+        }
+
+        footer h5 {
+            color: var(--primary-yellow);
+            margin-bottom: 1.5rem;
+        }
+
+        footer a {
+            color: #aaa;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        footer .social-links a {
+            display: inline-flex;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        footer .social-links a:hover {
+            background: var(--primary-red);
+            transform: translateY(-3px);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .countdown-item .number {
+                font-size: 2rem;
+            }
+            
+            .section-header h2 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* African Pattern Overlay */
+        .pattern-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.3;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top" :class="{ 'scrolled': scrolled }">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="https://gitexafrica.com/wp-content/uploads/2024/01/gitex-africa-logo.png" alt="GITEX AFRICA">
+            </a>
+            <button class="navbar-toggler" type="button" @click="toggleMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" :class="{ 'show': menuOpen }">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="#sectors">Secteurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#conference">Conférence</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#startups">Startups</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#programs">Programmes</a></li>
+                    <li class="nav-item ms-3">
+                        <select class="form-select form-select-sm" v-model="lang">
+                            <option value="fr">FR</option>
+                            <option value="en">EN</option>
+                        </select>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <select class="form-select form-select-sm" v-model="currency">
+                            <option value="MAD">MAD</option>
+                            <option value="USD">USD</option>
+                        </select>
+                    </li>
+                    <li class="nav-item ms-3">
+                        <a href="#" class="btn btn-primary-custom">Visitor Registration</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="pattern-overlay"></div>
+        <div class="container position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-8 hero-content" data-aos="fade-up">
+                    <h1>LE PLUS GRAND ÉVÉNEMENT TECH & STARTUPS D'AFRIQUE</h1>
+                    <p class="subtitle">Accélérer l'économie numérique africaine à l'ère de l'Intelligence Artificielle</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="#" class="btn btn-primary-custom btn-lg">
+                            <i class="fas fa-ticket-alt me-2"></i>Réserver ma place
+                        </a>
+                        <a href="#" class="btn btn-outline-light btn-lg px-4">
+                            <i class="fas fa-play-circle me-2"></i>Voir la vidéo
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Countdown -->
+            <div class="row mt-5" data-aos="fade-up" data-aos-delay="200">
+                <div class="col-12">
+                    <div class="countdown-container">
+                        <div class="row text-center">
+                            <div class="col-6 col-md-3">
+                                <div class="countdown-item">
+                                    <span class="number">{{ countdown.days }}</span>
+                                    <div class="label">Jours</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="countdown-item">
+                                    <span class="number">{{ countdown.hours }}</span>
+                                    <div class="label">Heures</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="countdown-item">
+                                    <span class="number">{{ countdown.minutes }}</span>
+                                    <div class="label">Minutes</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="countdown-item">
+                                    <span class="number">{{ countdown.seconds }}</span>
+                                    <div class="label">Secondes</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Introduction Section -->
+    <section class="py-5 my-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <h2 class="mb-4">Rejoignez le plus grand rendez-vous technologique d'Afrique</h2>
+                    <p class="lead text-muted mb-4">
+                        Ne vous contentez pas de lire l'actualité technologique, rencontrez les entreprises qui la façonnent. 
+                        Des géants mondiaux de la technologie aux startups africaines les plus audacieuses.
+                    </p>
+                    <blockquote class="blockquote border-start border-4 border-danger ps-4">
+                        <p class="mb-3">"Il est temps pour l'Afrique d'écrire un nouveau chapitre de son histoire où l'innovation numérique en sera le principal moteur."</p>
+                        <footer class="blockquote-footer">H.E. AZIZ AKHANNOUCH, <cite>Premier Ministre - Chef du Gouvernement</cite></footer>
+                    </blockquote>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="ratio ratio-16x9 rounded-3 overflow-hidden shadow-lg">
+                        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Sectors -->
+    <section id="sectors" class="py-5 bg-light">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Secteurs Clés</h2>
+                <p>Découvrez les secteurs à forte croissance qui façonnent l'avenir numérique de l'Afrique</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" v-for="(sector, index) in sectors" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="sector-card">
+                        <div class="sector-icon">
+                            <i :class="sector.icon"></i>
+                        </div>
+                        <h3>{{ sector.title }}</h3>
+                        <p>{{ sector.description }}</p>
+                        <a href="#" class="text-decoration-none fw-bold" :style="{ color: 'var(--primary-red)' }">
+                            En savoir plus <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="0">
+                    <div class="stat-item">
+                        <span class="number">$2.9T</span>
+                        <div class="label">Économie numérique d'ici 2030</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="stat-item">
+                        <span class="number">$16.5B</span>
+                        <div class="label">Marché de l'IA d'ici 2030</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="stat-item">
+                        <span class="number">1000+</span>
+                        <div class="label">Startups participantes</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="stat-item">
+                        <span class="number">50K+</span>
+                        <div class="label">Visiteurs attendus</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Conference Themes -->
+    <section id="conference" class="py-5 my-5">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>GITEX AFRICA 2026 Conference Themes</h2>
+                <p>African Intelligence. Collaborative Innovation. Unstoppable Momentum.</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4" v-for="(theme, index) in conferenceThemes" :key="index" data-aos="fade-up" :data-aos-delay="index * 150">
+                    <div class="program-card h-100">
+                        <div class="program-header">
+                            <i :class="theme.icon" class="fas fa-3x mb-3"></i>
+                            <h3 class="mb-0">{{ theme.title }}</h3>
+                        </div>
+                        <div class="program-body">
+                            <p>{{ theme.description }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Les Voix de l'Innovation Africaine</h2>
+                <p>Découvrez ce que disent nos participants</p>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4" v-for="(testimonial, index) in testimonials" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="testimonial-card">
+                        <p class="quote">"{{ testimonial.quote }}"</p>
+                        <div class="author">
+                            <img :src="testimonial.image" :alt="testimonial.name" class="author-img">
+                            <div class="author-info">
+                                <h4>{{ testimonial.name }}</h4>
+                                <p>{{ testimonial.position }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs -->
+    <section id="programs" class="py-5 my-5">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Programmes Puissants</h2>
+                <p>Des programmes conçus pour lancer la prochaine startup africaine</p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6" v-for="(program, index) in programs" :key="index" data-aos="fade-up" :data-aos-delay="index * 100">
+                    <div class="program-card h-100">
+                        <div class="program-header" :style="{ background: program.color }">
+                            <i :class="program.icon" class="fas fa-2x mb-2"></i>
+                            <h4 class="mb-0">{{ program.title }}</h4>
+                        </div>
+                        <div class="program-body">
+                            <p>{{ program.description }}</p>
+                            <a href="#" class="btn btn-outline-primary btn-sm mt-3">En savoir plus</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sponsors -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2>Nos Sponsors</h2>
+                <p>Ils nous font confiance</p>
+            </div>
+            
+            <div class="row g-3">
+                <div class="col-6 col-md-3 col-lg-2" v-for="(sponsor, index) in sponsors" :key="index" data-aos="zoom-in" :data-aos-delay="index * 50">
+                    <div class="sponsor-logo">
+                        <i class="fas fa-building fa-2x text-muted"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5" style="background: linear-gradient(135deg, var(--primary-red), var(--primary-teal));">
+        <div class="container text-center text-white" data-aos="zoom-in">
+            <h2 class="mb-4">Prêt à rejoindre l'aventure GITEX AFRICA ?</h2>
+            <p class="lead mb-4">Réservez votre place dès maintenant et faites partie de la révolution numérique africaine</p>
+            <a href="#" class="btn btn-light btn-lg px-5 fw-bold">
+                <i class="fas fa-ticket-alt me-2"></i>Réserver mon pass
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <h5>GITEX AFRICA</h5>
+                    <p>Le plus grand événement tech et startups d'Afrique. Accélérons ensemble l'économie numérique africaine.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Liens Rapides</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">À propos</a></li>
+                        <li><a href="#">Programme</a></li>
+                        <li><a href="#">Exposants</a></li>
+                        <li><a href="#">Startups</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Informations</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">Billetterie</a></li>
+                        <li><a href="#">Hébergement</a></li>
+                        <li><a href="#">Transport</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Légal</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms & Conditions</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6 mb-4">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-map-marker-alt me-2"></i>Marrakech, Maroc</li>
+                        <li><i class="fas fa-envelope me-2"></i>info@gitexafrica.com</li>
+                        <li><i class="fas fa-phone me-2"></i>+212 XXXXXXXX</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4" style="border-color: rgba(255,255,255,0.1)">
+            <div class="text-center">
+                <p class="mb-0">&copy; 2026 GITEX AFRICA. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                scrolled: false,
+                menuOpen: false,
+                lang: 'fr',
+                currency: 'MAD',
+                countdown: {
+                    days: 0,
+                    hours: 0,
+                    minutes: 0,
+                    seconds: 0
+                },
+                sectors: [
+                    {
+                        title: 'Data Centers',
+                        icon: 'fas fa-server',
+                        description: 'Le pilier de l\'économie numérique africaine devrait dépasser 28 milliards de dollars d\'ici 2030.'
+                    },
+                    {
+                        title: 'Intelligence Artificielle',
+                        icon: 'fas fa-brain',
+                        description: 'Un marché appelé à passer de 4,5 à 16,5 milliards de dollars d\'ici 2030.'
+                    },
+                    {
+                        title: 'Fintech',
+                        icon: 'fas fa-mobile-alt',
+                        description: 'L\'Afrique concentre 50% des utilisateurs mondiaux de gestion de flux d\'argent sur mobile.'
+                    },
+                    {
+                        title: 'Cybersécurité',
+                        icon: 'fas fa-shield-alt',
+                        description: 'Solutions avancées protégeant les infrastructures critiques africaines.'
+                    },
+                    {
+                        title: 'AgriTech',
+                        icon: 'fas fa-tractor',
+                        description: 'Innovations agricoles pilotées par l\'IA, drones et capteurs IoT.'
+                    },
+                    {
+                        title: 'HealthTech',
+                        icon: 'fas fa-heartbeat',
+                        description: 'Marché de la santé numérique devrait atteindre 9,3 milliards de dollars.'
+                    }
+                ],
+                conferenceThemes: [
+                    {
+                        title: 'Executive Summit',
+                        icon: 'fa-users',
+                        description: 'Un sommet de haut niveau réunissant décideurs, investisseurs et leaders tech.'
+                    },
+                    {
+                        title: 'Connected Future Summit',
+                        icon: 'fa-network-wired',
+                        description: 'Construire des écosystèmes numériques souverains, évolutifs et investissables.'
+                    },
+                    {
+                        title: 'Africa AI Governance Forum',
+                        icon: 'fa-robot',
+                        description: 'Façonner des cadres responsables et la préparation de la main-d\'œuvre à l\'IA.'
+                    },
+                    {
+                        title: 'Cyber - Resilient Architecture',
+                        icon: 'fa-lock',
+                        description: 'Sécuriser les infrastructures critiques et contrer les menaces cyber modernes.'
+                    },
+                    {
+                        title: 'The Founders\' Room',
+                        icon: 'fa-rocket',
+                        description: 'Plateforme scale-up où les fondateurs transforment leurs idées en champions.'
+                    },
+                    {
+                        title: 'Talent Academy',
+                        icon: 'fa-graduation-cap',
+                        description: 'Programme de formation intensive pour les innovateurs de demain.'
+                    }
+                ],
+                testimonials: [
+                    {
+                        name: 'Abdulmalik Adeyemo',
+                        position: 'CEO - Fundus AI',
+                        image: 'https://ui-avatars.com/api/?name=Abdulmalik+Adeyemo&background=E63946&color=fff',
+                        quote: 'GITEX AFRICA est le lieu où les leaders technologiques africains se rassemblent pour explorer des opportunités et présenter leurs innovations.'
+                    },
+                    {
+                        name: 'Akosua Annobil',
+                        position: 'Fondatrice - TechInGhana',
+                        image: 'https://ui-avatars.com/api/?name=Akosua+Annobil&background=1D9A9A&color=fff',
+                        quote: 'GITEX AFRICA met en lumière la puissance croissante de l\'Afrique dans l\'économie mondiale de l\'IA.'
+                    },
+                    {
+                        name: 'Lacina Koné',
+                        position: 'CEO - Smart Africa',
+                        image: 'https://ui-avatars.com/api/?name=Lacina+Kone&background=F4A261&color=fff',
+                        quote: 'L\'événement de référence pour celles et ceux qui stimulent l\'innovation technologique en Afrique.'
+                    }
+                ],
+                programs: [
+                    {
+                        title: 'Scale-up Program',
+                        icon: 'fa-chart-line',
+                        description: 'Mentorat et conseil pour startups en croissance',
+                        color: 'linear-gradient(135deg, #E63946, #D62839)'
+                    },
+                    {
+                        title: 'Talent Academy',
+                        icon: 'fa-graduation-cap',
+                        description: 'Formation intensive aux compétences tech',
+                        color: 'linear-gradient(135deg, #1D9A9A, #2A9D8F)'
+                    },
+                    {
+                        title: 'Diaspora Program',
+                        icon: 'fa-globe-africa',
+                        description: 'Connecter la diaspora à l\'économie numérique',
+                        color: 'linear-gradient(135deg, #F4A261, #E9C46A)'
+                    },
+                    {
+                        title: 'Certified Trainings',
+                        icon: 'fa-certificate',
+                        description: '20+ masterclasses en direct',
+                        color: 'linear-gradient(135deg, #2A9D8F, #264653)'
+                    }
+                ],
+                sponsors: Array(12).fill({})
+            }
+        },
+        mounted() {
+            // Initialize AOS
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 100
+            });
+
+            // Scroll listener
+            window.addEventListener('scroll', () => {
+                this.scrolled = window.scrollY > 50;
+            });
+
+            // Start countdown
+            this.startCountdown();
+        },
+        methods: {
+            toggleMenu() {
+                this.menuOpen = !this.menuOpen;
+            },
+            startCountdown() {
+                // Set event date (April 7, 2026)
+                const eventDate = new Date('April 7, 2026 09:00:00').getTime();
+
+                const updateCountdown = () => {
+                    const now = new Date().getTime();
+                    const distance = eventDate - now;
+
+                    this.countdown.days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    this.countdown.hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    this.countdown.minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    this.countdown.seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                };
+
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+            }
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
